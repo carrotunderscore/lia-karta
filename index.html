@@ -46,7 +46,11 @@ a{color:var(--accent)}
 header.top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
 .loc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .loc label{font-size:.8rem;color:var(--muted);font-weight:600}
-select,input[type=search]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.addrform{display:flex;gap:8px;flex:1 1 320px;min-width:0}
+.addrform input{flex:1;min-width:0}
+.locaddr{font-size:.85rem;width:100%}
+.locaddr b{font-weight:600}
+select,input[type=search],input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
 button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px}
 button:hover{border-color:var(--accent)}
 button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
@@ -133,6 +137,11 @@ td .sw{display:inline-block;width:10px;height:10px;border-radius:50%;background:
       <select id="town"></select>
       <button id="geo" type="button">Använd min position</button>
       <button id="pick" type="button">Klicka på kartan</button>
+      <form id="addrform" class="addrform">
+        <input type="text" id="addr" placeholder="Gatuadress, stad" aria-label="Din adress och stad" autocomplete="street-address">
+        <button type="submit">Sök adress</button>
+      </form>
+      <div class="locaddr" id="locaddr"></div>
       <div class="locmsg" id="locmsg" aria-live="polite"></div>
     </div>
   </header>
@@ -363,12 +372,32 @@ function fillTowns(){
   townSel.value=custom?"__c":home.name;
 }
 townSel.addEventListener("change",()=>{const t=TOWNS.find(t=>t[0]===townSel.value);if(t){setHome({name:t[0],lat:t[1],lng:t[2]});msg("")}});
-function setHome(h){home=h;store.set("home",h);fillTowns();render()}
+function setHome(h){home=h;store.set("home",h);fillTowns();showHome();render()}
+function showHome(){$("locaddr").innerHTML=`Avstånd räknas från: <b>${esc(home.addr||home.name)}</b>`}
+// Adressuppslag via OpenStreetMap Nominatim
+const NOM="https://nominatim.openstreetmap.org/";
+function fmtAddr(j){const a=(j&&j.address)||{};const street=[a.road||a.pedestrian||a.footway||a.path,a.house_number].filter(Boolean).join(" ");const city=a.city||a.town||a.village||a.municipality||a.suburb||"";return [street,a.postcode,city].filter(Boolean).join(", ")||(j&&j.display_name)||""}
+const shortName=j=>{const a=(j&&j.address)||{};return a.city||a.town||a.village||a.municipality||"Min adress"};
+async function reverse(lat,lng){try{const r=await fetch(`${NOM}reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=sv`);return await r.json()}catch(e){return null}}
+async function setHomeFromPoint(lat,lng,label){
+  setHome({name:label,lat,lng});msg("Slår upp adressen…");
+  const j=await reverse(lat,lng);
+  if(j&&!j.error){const addr=fmtAddr(j);setHome({name:label+" – "+shortName(j),addr,lat,lng});$("addr").value=addr;msg("")}
+  else msg("Kunde inte slå upp adressen, men avstånden räknas från punkten.");
+}
+$("addrform").addEventListener("submit",async e=>{
+  e.preventDefault();const q=$("addr").value.trim();if(!q)return;msg("Söker adress…");
+  try{const r=await fetch(`${NOM}search?format=jsonv2&limit=1&addressdetails=1&countrycodes=se&accept-language=sv&viewbox=12.3,56.6,14.7,55.3&q=${encodeURIComponent(q)}`);const j=(await r.json())[0];
+    if(!j){msg("Hittade ingen adress. Skriv till exempel \"Storgatan 5, Lund\".");return}
+    const addr=fmtAddr(j);setHome({name:shortName(j),addr,lat:+(+j.lat).toFixed(5),lng:+(+j.lon).toFixed(5)});$("addr").value=addr;msg("");
+    if(typeof map!=="undefined")map.flyTo([+j.lat,+j.lon],12,{duration:.6});
+  }catch(err){msg("Adressökningen svarade inte. Försök igen om en stund.")}
+});
 function msg(t){$("locmsg").textContent=t}
 $("geo").addEventListener("click",()=>{
   if(!navigator.geolocation){msg("Den här vyn kan inte läsa din position. Välj ort eller klicka på kartan.");return}
   msg("Hämtar position…");
-  navigator.geolocation.getCurrentPosition(p=>{setHome({name:"Min position",lat:p.coords.latitude,lng:p.coords.longitude});msg("Position hämtad.")},
+  navigator.geolocation.getCurrentPosition(p=>{setHomeFromPoint(+p.coords.latitude.toFixed(5),+p.coords.longitude.toFixed(5),"Min position")},
     ()=>msg("Positionen delades inte här. Välj din ort i listan eller klicka på kartan där du bor."),{timeout:8000});
 });
 $("pick").addEventListener("click",()=>{pickMode=!pickMode;$("mapbox").classList.toggle("setting",pickMode);$("pick").classList.toggle("primary",pickMode);msg(pickMode?"Klicka på kartan där du bor.":"")});
@@ -447,12 +476,12 @@ function select(id,fromList){
   map.flyTo(jit(p),13,{duration:.6});setTimeout(()=>markers[id]&&markers[id].openPopup(),650);
   if(fromList)$("mapbox").scrollIntoView({block:"nearest",behavior:"smooth"});
 }
-map.on("click",e=>{if(!pickMode)return;setHome({name:"Vald punkt på kartan",lat:+e.latlng.lat.toFixed(4),lng:+e.latlng.lng.toFixed(4)});pickMode=false;$("mapbox").classList.remove("setting");$("pick").classList.remove("primary");msg("Din plats är satt.")});
+map.on("click",e=>{if(!pickMode)return;pickMode=false;$("mapbox").classList.remove("setting");$("pick").classList.remove("primary");setHomeFromPoint(+e.latlng.lat.toFixed(5),+e.latlng.lng.toFixed(5),"Vald punkt")});
 
 // --- referenstabell ---
 $("reftbody").innerHTML=SECTORS.map(s=>{const r=REF[s.id];return `<tr style="--c:var(${s.c})"><td><span class="sw"></span><strong>${s.name}</strong><div class="meta">${s.subs.join(" · ")}</div></td><td>${r.kw}</td><td>${r.dec}</td><td>${r.how}</td></tr>`}).join("");
 
-fillTowns();buildChips();buildSubs();render();
+fillTowns();buildChips();buildSubs();showHome();if(home.addr)$("addr").value=home.addr;render();
 </script>
 
 </body>
