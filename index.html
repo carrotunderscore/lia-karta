@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LIA-karta Skåne</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: verktygsfält överst, lista till vänster, klistrad karta till höger; sökord och beslutsfattare under. */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --ink:#15262b; --muted:#56696f; --line:#d5dfe0;
+  --accent:#0e6f73; --accent-ink:#ffffff; --accent-soft:#dcefee; --land:#f1f3e8; --sea:#bcd8e6; --coast:#6f8f86; --lake:#a9cde0; --foreign:#dfe3dc; --sealabel:#4f7d93;
+  --warn:#9a5b00; --warn-soft:#fbefd9; --ok:#1f7a44; --ok-soft:#e0f2e6; --home:#c2185b;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --s1:#0e6f73; --s2:#c2410c; --s3:#6d28d9; --s4:#b91c1c; --s5:#334155; --s6:#a16207; --s7:#15803d; --s8:#be185d; --s9:#1d4ed8;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1719; --surface:#162125; --ink:#e3eced; --muted:#93a8ad; --line:#2a3a3e;
+  --accent:#4fc1c1; --accent-ink:#06252a; --accent-soft:#173a3c; --land:#2a3a33; --sea:#0a2230; --coast:#6c8f84; --lake:#123447; --foreign:#1e2a28; --sealabel:#5f93ab;
+  --warn:#f0b35a; --warn-soft:#3a2c12; --ok:#6fd39a; --ok-soft:#173326; --home:#ff6fa5;
+  --s1:#4fc1c1; --s2:#fb8a55; --s3:#b69cff; --s4:#f87171; --s5:#a7b6c8; --s6:#e8c04f; --s7:#5fd38a; --s8:#f37fb6; --s9:#7ea6ff;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1719; --surface:#162125; --ink:#e3eced; --muted:#93a8ad; --line:#2a3a3e;
+  --accent:#4fc1c1; --accent-ink:#06252a; --accent-soft:#173a3c; --land:#2a3a33; --sea:#0a2230; --coast:#6c8f84; --lake:#123447; --foreign:#1e2a28; --sealabel:#5f93ab;
+  --warn:#f0b35a; --warn-soft:#3a2c12; --ok:#6fd39a; --ok-soft:#173326; --home:#ff6fa5;
+  --s1:#4fc1c1; --s2:#fb8a55; --s3:#b69cff; --s4:#f87171; --s5:#a7b6c8; --s6:#e8c04f; --s7:#5fd38a; --s8:#f37fb6; --s9:#7ea6ff;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html{color-scheme:light}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(1.7rem,3.4vw,2.4rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.45rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+a{color:var(--accent)}
+.eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.lede{color:var(--muted);max-width:70ch;margin:8px 0 0}
+header.top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+.loc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.loc label{font-size:.8rem;color:var(--muted);font-weight:600}
+select,input[type=search]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.locmsg{font-size:.8rem;color:var(--muted);width:100%}
+.locmsg:empty{display:none}
+
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px;margin-bottom:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px 4px 8px;font-size:.82rem;cursor:pointer;user-select:none}
+.chip .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.chip .n{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.frow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.frow > *{min-width:0}
+.range{display:flex;align-items:center;gap:8px;flex:1 1 260px}
+.range input{flex:1;accent-color:var(--accent)}
+.km{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.85rem;min-width:7ch}
+.count{font-size:.85rem;color:var(--muted)}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:16px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}.mapcol{order:-1}}
+.mapcol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:900px){.mapcol{position:static}}
+.mapbox{background:var(--sea);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;touch-action:none}
+#map{height:620px;width:100%;background:var(--sea)}
+@media (max-width:900px){#map{height:420px}}
+.mapbox.setting .leaflet-container{cursor:crosshair}
+.leaflet-popup-content{font-family:var(--f-body);font-size:13px;line-height:1.4}
+.leaflet-popup-content b{font-family:var(--f-display);font-size:14px}
+.mapctl{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:36px;height:36px;padding:0;font-size:1.1rem;font-weight:600}
+.maphint{font-size:.78rem;color:var(--muted);margin:8px 2px 0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.75rem;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block}
+
+.list{display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:10px;padding:12px 14px;display:grid;gap:6px;min-width:0}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.card .hd{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.card h3{font-size:1rem}
+.card .dist{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.85rem;white-space:nowrap;color:var(--ink)}
+.meta{font-size:.8rem;color:var(--muted)}
+.kv{display:grid;grid-template-columns:8.5rem minmax(0,1fr);gap:2px 10px;font-size:.85rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+@media (max-width:480px){.kv{grid-template-columns:minmax(0,1fr)}.kv dd{margin-bottom:4px}}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:.72rem;padding:1px 7px;border-radius:4px;background:var(--bg);border:1px solid var(--line)}
+.badge{font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:4px}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.chk{background:var(--warn-soft);color:var(--warn)}
+.badge.fav{background:var(--accent-soft);color:var(--accent)}
+.links{display:flex;flex-wrap:wrap;gap:12px;font-size:.85rem}
+.empty{padding:24px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
+
+section.ref{margin-top:40px;display:grid;gap:16px}
+.reftable{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:.86rem}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td .sw{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:6px}
+.tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.tip{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.tip p,.tip ul{margin:6px 0 0;font-size:.88rem}
+.tip ul{padding-left:1.1rem}
+.foot{margin-top:28px;font-size:.8rem;color:var(--muted);max-width:80ch}
+@media (prefers-reduced-motion:no-preference){.card{transition:box-shadow .15s,border-color .15s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Socialpedagog · LIA från januari 2027</div>
+      <h1>LIA-karta Skåne</h1>
+      <p class="lede">Arbetsplatser i hela Skåne där en socialpedagog kan göra LIA. HVB-hem och behandlingshem är markerade som förstahandsval. Avstånd räknas fågelvägen från den plats du väljer.</p>
+    </div>
+    <div class="loc" role="group" aria-label="Din plats">
+      <label for="town">Min plats</label>
+      <select id="town"></select>
+      <button id="geo" type="button">Använd min position</button>
+      <button id="pick" type="button">Klicka på kartan</button>
+      <div class="locmsg" id="locmsg" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <div class="filters">
+    <div class="chips" id="chips" role="group" aria-label="Filtrera på bransch"></div>
+    <div class="frow">
+      <select id="sub" aria-label="Underkategori"></select>
+      <div class="range">
+        <label for="maxkm" class="meta">Max avstånd</label>
+        <input type="range" id="maxkm" min="5" max="200" step="5" value="200">
+        <span class="km" id="kmout"></span>
+      </div>
+      <input type="search" id="q" placeholder="Sök namn, ort, målgrupp…" aria-label="Fritextsök">
+      <select id="sort" aria-label="Sortering">
+        <option value="dist">Närmast först</option>
+        <option value="fav">HVB/behandling först</option>
+        <option value="name">A–Ö</option>
+      </select>
+      <span class="count" id="count"></span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="list" id="list"></div>
+    <div class="mapcol">
+      <div class="mapbox" id="mapbox">
+        <div id="map" role="region" aria-label="Karta över Skåne med arbetsplatser"></div>
+      </div>
+      <p class="maphint">Klicka på en punkt för att se arbetsplatsen. Positionerna är ungefärliga (ortsnivå) – använd länken "Google Maps" på kortet för exakt adress.</p>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <section class="ref" id="sokord">
+    <div>
+      <div class="eyebrow">Så hittar du fler</div>
+      <h2>Sökord och vem som beslutar om LIA</h2>
+      <p class="lede">Titlarna nedan är de som platsbanker och kommunernas jobbportaler använder. Sök på dem i Platsbanken, Offentliga jobb och kommunernas sidor för att hitta enheter som rekryterar, och därmed namnet på enhetschefen.</p>
+    </div>
+    <div class="reftable"><table>
+      <thead><tr><th style="width:17%">Sektor</th><th style="width:33%">Sökord / yrkestitlar</th><th style="width:25%">Beslutar om LIA/VFU</th><th>Kontaktväg</th></tr></thead>
+      <tbody id="reftbody"></tbody>
+    </table></div>
+
+    <div class="tips">
+      <div class="tip">
+        <h3>Tidsplan inför januari</h3>
+        <ul>
+          <li>Kontakta förstahandsvalen den här veckan. Många enheter lägger handledarschemat för vårterminen i början av december.</li>
+          <li>Skicka ett kort mejl: vem du är, utbildning, LIA-period (datum och veckor), vad du vill lära dig. Bifoga skolans LIA-information.</li>
+          <li>Ring upp efter 3–4 arbetsdagar. Fråga efter enhetschef eller föreståndare med namn.</li>
+          <li>Räkna med registerutdrag: HVB och LSS för barn kräver utdrag ur belastningsregistret. Beställ det hos Polisen i god tid, leveransen tar ofta 1–2 veckor.</li>
+        </ul>
+      </div>
+      <div class="tip">
+        <h3>Källor att skanna vidare</h3>
+        <ul>
+          <li><a href="https://www.ivo.se" target="_blank" rel="noopener">IVO</a>: tillståndsregister för HVB, stödboende och LSS.</li>
+          <li><a href="https://www.hvbguiden.se/hvb/skane-lan" target="_blank" rel="noopener">HVBGuiden, Skåne län</a>: cirka 150 HVB med målgruppsfilter.</li>
+          <li><a href="https://arbetsformedlingen.se/platsbanken" target="_blank" rel="noopener">Platsbanken</a>: sök sökorden ovan + "Skåne". Utgångna annonser visar vilka enheter som växer.</li>
+          <li><a href="https://malmo.se/Jobba-i-Malmo-stad.html" target="_blank" rel="noopener">Malmö stad</a>, <a href="https://lund.se" target="_blank" rel="noopener">Lunds kommun</a>, <a href="https://helsingborg.se" target="_blank" rel="noopener">Helsingborg</a>: verksamhetsregister och organisationsscheman.</li>
+        </ul>
+      </div>
+      <div class="tip">
+        <h3>Om uppgifterna</h3>
+        <p><span class="badge ok">Bekräftad</span> betyder att verksamheten syns i en platsannons, katalog eller på huvudmannens egen sida 2025–2026.</p>
+        <p><span class="badge chk">Kontrollera</span> betyder att huvudmannen finns men att exakt enhet, adress eller namn bör stämmas av innan du hör av dig.</p>
+        <p>Länkarna med "Sök kontakt" öppnar en webbsökning när jag inte har kunnat bekräfta en egen webbadress.</p>
+      </div>
+    </div>
+  </section>
+  <p class="foot">Karta: © OpenStreetMap-bidragsgivare. Sammanställt 19 november 2026 från platsannonser, HVBGuiden, kommunernas webbplatser, SiS, Kriminalvården och idéburna organisationers egna sidor. Kartan är ritad förenklat och visar inte exakta adresser.</p>
+</div>
+
+<script>
+const SECTORS = [
+ {id:"skola", name:"Skola och utbildning", c:"--s9", subs:["Grund- och gymnasieskola","Folkhögskola och vuxenutbildning","Anpassad skola"]},
+ {id:"barn", name:"Barn, unga och familj", c:"--s1", subs:["HVB-hem och SiS","Stödboenden","Fältarbete och fritidsgårdar","Familjebehandling och öppenvård"]},
+ {id:"lss", name:"Funktionsnedsättning", c:"--s3", subs:["Grupp- och servicebostäder (LSS)","Daglig verksamhet","Boendestöd (SoL)","Personlig assistans"]},
+ {id:"beroende", name:"Beroendevård och hemlöshet", c:"--s2", subs:["Behandlingshem","Akutboenden och härbärgen","Sprututbyte och lågtröskel"]},
+ {id:"krim", name:"Kriminalvård och rättsväsende", c:"--s5", subs:["Anstalt och häkte","Frivård","Stödcentrum för unga brottsutsatta"]},
+ {id:"arb", name:"Arbetsmarknad och integration", c:"--s6", subs:["Arbetsmarknadsenheter (AME)","Samordningsförbund (Finsam)","Integrationsverksamheter"]},
+ {id:"ngo", name:"Civilsamhälle och idéburet", c:"--s7", subs:["Ideella organisationer","Idrottsrörelsen"]},
+ {id:"psyk", name:"Psykiatri och hälso- och sjukvård", c:"--s8", subs:["Psykiatrisk öppen- och slutenvård"]},
+ {id:"asf", name:"Arbetsintegrerande sociala företag", c:"--s4", subs:["Arbetsintegrerande sociala företag (ASF)"]}
+];
+
+// Beslutsfattare och sökord per sektor
+const REF = {
+ skola:{kw:"elevassistent, resurspedagog, socialpedagog, elevcoach, trygghetsvärd, fritidsledare (fritidshem), mentor, deltagarstödjare (folkhögskola), elevassistent anpassad skola", dec:"Rektor eller biträdande rektor; elevhälsochef för elevhälsoteamet", how:"Skolans expedition → rektor. I Malmö och Lund finns ofta en VFU/LIA-samordnare på förvaltningen."},
+ barn:{kw:"behandlingspedagog, behandlingsassistent, miljöterapeut, socialpedagog, boendestödjare, stödassistent, fältsekreterare, fältassistent, ungdomsvärd, fritidsledare, familjebehandlare, familjepedagog", dec:"Föreståndare (krav enligt IVO för HVB), verksamhetschef eller enhetschef; hos koncerner även regionchef. SiS: avdelningschef och institutionens HR", how:"Ring HVB-hemmet direkt och fråga efter föreståndaren. Hos Humana, Nytida, Amplius: kontakta enheten först, inte central HR."},
+ lss:{kw:"stödpedagog, boendestödjare, stödassistent, habiliteringsassistent, aktivitetshandledare, arbetshandledare, personlig assistent, LSS-pedagog", dec:"Enhetschef för gruppbostaden eller dagliga verksamheten; verksamhetschef i privat regi", how:"Kommunens funktionsstödsförvaltning har en lista över enheter och enhetschefer."},
+ beroende:{kw:"behandlare, behandlingsassistent, alkohol- och drogterapeut, motivationsarbetare, boendestödjare, socialarbetare, härbärgesvärd, boendevärd, kurator", dec:"Föreståndare eller enhetschef; verksamhetsledare hos idéburna; vårdenhetschef inom Region Skåne", how:"Idéburna (Stadsmissionen m.fl.) har ofta en volontär- eller praktiksamordnare."},
+ krim:{kw:"kriminalvårdare, frivårdsinspektör, programledare, behandlingsassistent, klienthandläggare, stödsamtalare, brottsofferstödjare", dec:"Kriminalvårdsinspektör (chef) på anstalt, häkte eller frivårdskontor; praktik hanteras ofta via Kriminalvårdens praktikrutin och HR", how:"Kolla praktiksidan på kriminalvarden.se. Stödcentrum: enhetschef inom socialtjänsten."},
+ arb:{kw:"arbetsmarknadskonsulent, jobbcoach, arbetshandledare, arbetskonsulent, integrationssamordnare, samhällsvägledare, processledare, samordnare", dec:"Enhetschef på AME; förbundschef eller processledare i samordningsförbund; projektledare i Finsam-insatser", how:"Finsam finansierar projekt med egna projektledare, de tar ofta praktikanter."},
+ ngo:{kw:"verksamhetsledare, volontärsamordnare, ungdomsledare, socialarbetare, samordnare, idrottskonsulent, föreningsutvecklare, projektledare social hållbarhet", dec:"Verksamhetschef eller verksamhetsledare lokalt; regionchef hos rikstäckande organisationer; volontärsamordnare", how:"Mejla den lokala verksamhetsledaren. Var tydlig med vilket projekt du vill vara med i."},
+ psyk:{kw:"skötare, mentalskötare, behandlingsassistent, miljöterapeut, stödpedagog, case manager, rehabkoordinator", dec:"Vårdenhetschef; verksamhetschef. Region Skåne samordnar praktik via sin utbildningsenhet", how:"Ring mottagningen och fråga efter vårdenhetschef. Fråga om de tar LIA från YH, inte bara VFU."},
+ asf:{kw:"arbetshandledare, handledare, coach, verksamhetsledare, arbetsledare", dec:"Verksamhetsledare eller VD; ibland styrelsen", how:"Små organisationer – ring direkt. Coompanion Skåne kan tipsa om ASF nära dig."}
+};
+
+// lat/lng är ungefärliga (ortsnivå). v: 1 = bekräftad i annons/katalog/egen sida, 0 = kontrollera
+const G = (q)=>"https://www.google.com/search?q="+encodeURIComponent(q);
+const P = [
+ // HVB-hem och SiS
+ {n:"Arendala HVB",o:"Arendala HVB AB",s:"barn",sub:"HVB-hem och SiS",city:"Lund (landsbygd)",lat:55.72,lng:13.30,t:"Ungdomar med traumaerfarenhet, skadligt bruk och psykisk ohälsa",kw:"behandlingspedagog",v:1,u:G("Arendala HVB Lund")},
+ {n:"Hassela Skåne – nytt HVB i Arlöv",o:"Hassela Skåne AB",s:"barn",sub:"HVB-hem och SiS",city:"Arlöv (Burlöv)",lat:55.638,lng:13.075,t:"Ungdomar 14–19 år, nystartat HVB med fem platser",kw:"behandlingspedagog",v:1,u:G("Hassela Skåne HVB Arlöv")},
+ {n:"Arlövsgårdens HVB",o:"Privat huvudman",s:"barn",sub:"HVB-hem och SiS",city:"Arlöv (Burlöv)",lat:55.645,lng:13.085,t:"Barn och unga (HVB för barn och unga)",kw:"behandlingsassistent, behandlingspedagog",v:0,u:G("Arlövsgårdens HVB")},
+ {n:"Humana HVB Hörby",o:"Humana",s:"barn",sub:"HVB-hem och SiS",city:"Hörby",lat:55.855,lng:13.662,t:"Barn och unga med psykosocial problematik",kw:"behandlingspedagog",v:1,u:"https://www.humana.se"},
+ {n:"Amplius HVB för barn, Höör",o:"Amplius Omsorg",s:"barn",sub:"HVB-hem och SiS",city:"Höör",lat:55.937,lng:13.540,t:"Barn (HVB, även nattbemanning)",kw:"behandlingspedagog",v:1,u:"https://ampliusomsorg.se"},
+ {n:"Amplius Ellagård",o:"Amplius Omsorg",s:"barn",sub:"Familjebehandling och öppenvård",city:"Tjörnarp (Höör)",lat:56.000,lng:13.630,t:"Familjer med barn upp till cirka 16 år – utredning och behandling, 30 platser",kw:"familjebehandlare, behandlingspedagog",v:1,u:"https://ampliusomsorg.se/verksamheter/ellagard"},
+ {n:"Axelvold Skola och HVB",o:"Axelvold",s:"barn",sub:"HVB-hem och SiS",city:"Axelvold (Svalöv)",lat:55.885,lng:13.075,t:"Ungdomar med psykosociala problem, NPF och skolproblematik – HVB med egen skola",kw:"behandlingspedagog, behandlingsassistent",v:1,u:G("Axelvold Skola och HVB")},
+ {n:"Åsbo HVB",o:"Åsbo HVB AB",s:"barn",sub:"HVB-hem och SiS",city:"Helsingborg",lat:56.06,lng:12.72,t:"Ungdomar, litet HVB med 1:1-bemanning",kw:"behandlingspedagog (dygnspass)",v:1,u:"https://asbohvb.se"},
+ {n:"Spektrum HVB",o:"Spektrum HVB",s:"barn",sub:"HVB-hem och SiS",city:"Malmö",lat:55.59,lng:13.01,t:"Ungdomar (arbete främst kvällar och helger)",kw:"behandlingspedagog",v:1,u:G("Spektrum HVB Malmö")},
+ {n:"Anton HVB",o:"Anton HVB AB",s:"barn",sub:"HVB-hem och SiS",city:"Kristianstad",lat:56.035,lng:14.16,t:"Barn och unga",kw:"behandlingsassistent, timvikarie",v:1,u:G("Anton HVB Kristianstad")},
+ {n:"SiS ungdomshem Ljungaskog",o:"Statens institutionsstyrelse",s:"barn",sub:"HVB-hem och SiS",city:"Örkelljunga",lat:56.27,lng:13.25,t:"Flickor över skolåldern med psykosocial problematik, missbruk och självskadebeteende (LVU)",kw:"behandlingsassistent, behandlingssekreterare",v:1,u:"https://www.stat-inst.se"},
+ {n:"SiS ungdomshem Hässleholm",o:"Statens institutionsstyrelse",s:"barn",sub:"HVB-hem och SiS",city:"Hässleholm",lat:56.17,lng:13.78,t:"Ungdomar placerade enligt LVU",kw:"behandlingsassistent",v:0,u:"https://www.stat-inst.se"},
+ {n:"Malmö stads HVB för barn och unga",o:"Malmö stad, sociala resursförvaltningen",s:"barn",sub:"HVB-hem och SiS",city:"Malmö",lat:55.60,lng:12.99,t:"Barn och unga 13–20 år i kommunala HVB",kw:"behandlingspedagog, socialpedagog",v:0,u:"https://malmo.se"},
+ // Stödboenden
+ {n:"Nytida stödboende/HVB, Lund",o:"Nytida (Ambea)",s:"barn",sub:"Stödboenden",city:"Lund",lat:55.71,lng:13.20,t:"Unga vuxna med psykosocial problematik",kw:"boendestödjare, behandlingsassistent",v:0,u:"https://nytida.se"},
+ {n:"Nytida, Helsingborg",o:"Nytida (Ambea)",s:"barn",sub:"Stödboenden",city:"Helsingborg",lat:56.04,lng:12.70,t:"Unga och unga vuxna, stödboende och HVB",kw:"boendestödjare",v:0,u:"https://nytida.se"},
+ {n:"Malmö stad – stödboende för unga",o:"Malmö stad",s:"barn",sub:"Stödboenden",city:"Malmö",lat:55.585,lng:13.00,t:"Unga 16–20 år som tränar på eget boende",kw:"boendestödjare, stödassistent",v:0,u:"https://malmo.se"},
+ // Fältarbete
+ {n:"Fältgruppen Malmö",o:"Malmö stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Malmö",lat:55.605,lng:13.00,t:"Ungdomar 12–20 år i offentlig miljö",kw:"fältsekreterare, fältassistent",v:0,u:"https://malmo.se"},
+ {n:"Fältverksamheten Lund",o:"Lunds kommun",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Lund",lat:55.705,lng:13.19,t:"Ungdomar 12–18 år",kw:"fältsekreterare",v:0,u:"https://lund.se"},
+ {n:"Fältare Helsingborg",o:"Helsingborgs stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Helsingborg",lat:56.046,lng:12.694,t:"Ungdomar och unga vuxna",kw:"fältare, fältsekreterare",v:0,u:"https://helsingborg.se"},
+ {n:"Fältgruppen Kristianstad",o:"Kristianstads kommun",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Kristianstad",lat:56.031,lng:14.156,t:"Ungdomar",kw:"fältsekreterare",v:0,u:"https://www.kristianstad.se"},
+ {n:"Fritidsgårdar och mötesplatser för unga",o:"Malmö stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Malmö (Rosengård m.fl.)",lat:55.585,lng:13.04,t:"Ungdomar 13–19 år",kw:"fritidsledare",v:0,u:"https://malmo.se"},
+ {n:"Fryshuset Malmö",o:"Fryshuset",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Malmö",lat:55.595,lng:13.02,t:"Unga i utsatta områden – avhopparverksamhet, föräldrastöd, ungdomsprojekt",kw:"ungdomsledare, projektledare, socialarbetare",v:0,u:"https://fryshuset.se"},
+ // Familjebehandling
+ {n:"Familjebehandling Malmö",o:"Malmö stad",s:"barn",sub:"Familjebehandling och öppenvård",city:"Malmö",lat:55.60,lng:13.01,t:"Familjer med barn 0–20 år",kw:"familjebehandlare, familjepedagog",v:0,u:"https://malmo.se"},
+ {n:"Familjebehandling Lund",o:"Lunds kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Lund",lat:55.70,lng:13.18,t:"Familjer, öppenvård barn och unga",kw:"familjebehandlare",v:0,u:"https://lund.se"},
+ {n:"Maria Malmö",o:"Malmö stad och Region Skåne",s:"barn",sub:"Familjebehandling och öppenvård",city:"Malmö",lat:55.597,lng:12.995,t:"Unga upp till 25 år med alkohol- eller drogproblem",kw:"behandlare, socialpedagog",v:1,u:"https://malmo.se"},
+ // Skola
+ {n:"Grundskola och elevhälsa Malmö",o:"Malmö stad, grundskoleförvaltningen",s:"skola",sub:"Grund- och gymnasieskola",city:"Malmö",lat:55.59,lng:12.985,t:"Elever 6–16 år, särskilt elever med behov av stöd",kw:"elevassistent, resurspedagog, socialpedagog",v:0,u:"https://malmo.se"},
+ {n:"Gymnasieskolor Lund",o:"Lunds kommun",s:"skola",sub:"Grund- och gymnasieskola",city:"Lund",lat:55.71,lng:13.185,t:"Gymnasieelever, introduktionsprogram",kw:"elevcoach, socialpedagog, mentor",v:0,u:"https://lund.se"},
+ {n:"Helsingborgs stad skola",o:"Helsingborgs stad",s:"skola",sub:"Grund- och gymnasieskola",city:"Helsingborg",lat:56.05,lng:12.69,t:"Elever i grund- och gymnasieskola",kw:"elevassistent, trygghetsvärd",v:0,u:"https://helsingborg.se"},
+ {n:"Malmö folkhögskola",o:"Malmö folkhögskola",s:"skola",sub:"Folkhögskola och vuxenutbildning",city:"Malmö",lat:55.575,lng:13.005,t:"Vuxna deltagare, allmän kurs och särskilda kurser",kw:"deltagarstödjare, kursledare",v:0,u:G("Malmö folkhögskola")},
+ {n:"Hvilan folkhögskola",o:"Hvilan",s:"skola",sub:"Folkhögskola och vuxenutbildning",city:"Åkarp (Burlöv)",lat:55.66,lng:13.11,t:"Vuxna deltagare, internat",kw:"deltagarstödjare, internatvärd",v:0,u:G("Hvilan folkhögskola Åkarp")},
+ {n:"Önnestads folkhögskola",o:"Önnestad",s:"skola",sub:"Folkhögskola och vuxenutbildning",city:"Önnestad (Kristianstad)",lat:56.06,lng:14.03,t:"Vuxna deltagare, internat",kw:"deltagarstödjare",v:0,u:G("Önnestads folkhögskola")},
+ {n:"Söderslätts folkhögskola",o:"Söderslätt",s:"skola",sub:"Folkhögskola och vuxenutbildning",city:"Trelleborg",lat:55.376,lng:13.157,t:"Vuxna deltagare",kw:"deltagarstödjare",v:0,u:G("Söderslätts folkhögskola")},
+ {n:"Österlens folkhögskola",o:"Österlen",s:"skola",sub:"Folkhögskola och vuxenutbildning",city:"Tomelilla",lat:55.545,lng:13.95,t:"Vuxna deltagare, internat",kw:"deltagarstödjare",v:0,u:G("Österlens folkhögskola")},
+ {n:"Anpassad grund- och gymnasieskola Malmö",o:"Malmö stad",s:"skola",sub:"Anpassad skola",city:"Malmö",lat:55.58,lng:12.98,t:"Elever med intellektuell funktionsnedsättning",kw:"elevassistent anpassad skola, resursperson",v:0,u:"https://malmo.se"},
+ {n:"Anpassad skola Lund",o:"Lunds kommun",s:"skola",sub:"Anpassad skola",city:"Lund",lat:55.69,lng:13.20,t:"Elever med intellektuell funktionsnedsättning",kw:"elevassistent",v:0,u:"https://lund.se"},
+ // LSS
+ {n:"Gruppbostäder och servicebostäder Malmö",o:"Malmö stad, funktionsstödsförvaltningen",s:"lss",sub:"Grupp- och servicebostäder (LSS)",city:"Malmö",lat:55.61,lng:13.02,t:"Vuxna med intellektuell funktionsnedsättning eller autism",kw:"stödpedagog, stödassistent",v:0,u:"https://malmo.se"},
+ {n:"Attendo gruppbostad Lund",o:"Attendo",s:"lss",sub:"Grupp- och servicebostäder (LSS)",city:"Lund",lat:55.715,lng:13.21,t:"Vuxna med funktionsnedsättning",kw:"stödassistent, stödpedagog",v:0,u:"https://www.attendo.se"},
+ {n:"Nytida, Eslöv",o:"Nytida (Ambea)",s:"lss",sub:"Grupp- och servicebostäder (LSS)",city:"Eslöv",lat:55.839,lng:13.304,t:"Personer med funktionsnedsättning",kw:"stödpedagog",v:0,u:"https://nytida.se"},
+ {n:"Daglig verksamhet Malmö",o:"Malmö stad",s:"lss",sub:"Daglig verksamhet",city:"Malmö",lat:55.57,lng:13.02,t:"Vuxna med LSS-beslut om daglig verksamhet",kw:"aktivitetshandledare, arbetshandledare",v:0,u:"https://malmo.se"},
+ {n:"Daglig verksamhet Lund",o:"Lunds kommun",s:"lss",sub:"Daglig verksamhet",city:"Lund",lat:55.70,lng:13.215,t:"Vuxna med LSS-beslut",kw:"aktivitetshandledare",v:0,u:"https://lund.se"},
+ {n:"Boendestöd socialpsykiatri Malmö",o:"Malmö stad",s:"lss",sub:"Boendestöd (SoL)",city:"Malmö",lat:55.60,lng:13.03,t:"Vuxna med psykisk funktionsnedsättning i eget boende",kw:"boendestödjare",v:0,u:"https://malmo.se"},
+ {n:"Boendestöd Helsingborg",o:"Helsingborgs stad",s:"lss",sub:"Boendestöd (SoL)",city:"Helsingborg",lat:56.03,lng:12.71,t:"Vuxna med psykisk funktionsnedsättning",kw:"boendestödjare",v:0,u:"https://helsingborg.se"},
+ {n:"Humana personlig assistans",o:"Humana",s:"lss",sub:"Personlig assistans",city:"Malmö",lat:55.605,lng:12.98,t:"Barn och vuxna med assistansbeslut",kw:"personlig assistent, assistanssamordnare",v:0,u:"https://www.humana.se"},
+ // Beroende
+ {n:"Avenbokens behandlingshem",o:"Malmö stad",s:"beroende",sub:"Behandlingshem",city:"Malmö",lat:55.57,lng:13.04,t:"Vuxna kvinnor och män med missbruk som behöver institutionsvård",kw:"behandlare, behandlingsassistent",v:1,u:"https://malmo.se"},
+ {n:"Stadsmissionshälsan",o:"Skåne Stadsmission",s:"beroende",sub:"Sprututbyte och lågtröskel",city:"Malmö",lat:55.605,lng:13.005,t:"Personer i hemlöshet och utsatthet, hälsomottagning med Region Skåne",kw:"socialarbetare",v:1,u:"https://www.skanestadsmission.se"},
+ {n:"Café David",o:"Skåne Stadsmission",s:"beroende",sub:"Akutboenden och härbärgen",city:"Malmö",lat:55.61,lng:12.995,t:"Personer i hemlöshet, dagverksamhet med frukost och stöd",kw:"volontärsamordnare, socialarbetare",v:1,u:"https://www.skanestadsmission.se"},
+ {n:"Crossroads Malmö",o:"Skåne Stadsmission m.fl.",s:"beroende",sub:"Akutboenden och härbärgen",city:"Malmö",lat:55.60,lng:12.995,t:"EU-medborgare och tredjelandsmedborgare i fattigdom och hemlöshet",kw:"rådgivare, socialarbetare",v:1,u:"https://malmo.se/eumedborgare"},
+ {n:"Malmö stad – akutboende för hemlösa",o:"Malmö stad",s:"beroende",sub:"Akutboenden och härbärgen",city:"Malmö",lat:55.59,lng:13.025,t:"Vuxna i akut hemlöshet",kw:"boendevärd, härbärgesvärd",v:0,u:"https://malmo.se/Bo-och-leva/Stod-och-omsorg/Hemloshet/Stod-till-hemlosa.html"},
+ {n:"Sprututbytet Malmö",o:"Region Skåne",s:"beroende",sub:"Sprututbyte och lågtröskel",city:"Malmö",lat:55.59,lng:12.99,t:"Personer som injicerar droger",kw:"kurator, behandlingsassistent",v:1,u:"https://www.1177.se/Skane"},
+ {n:"Sprututbytet Lund",o:"Region Skåne",s:"beroende",sub:"Sprututbyte och lågtröskel",city:"Lund",lat:55.715,lng:13.195,t:"Personer som injicerar droger (Sveriges första sprututbyte)",kw:"kurator",v:1,u:"https://www.1177.se/Skane"},
+ {n:"Sprututbytet Helsingborg",o:"Region Skåne",s:"beroende",sub:"Sprututbyte och lågtröskel",city:"Helsingborg",lat:56.04,lng:12.71,t:"Personer som injicerar droger",kw:"kurator",v:1,u:"https://www.1177.se/Skane"},
+ // Kriminalvård
+ {n:"Anstalten Malmö (Kirseberg/Fosie)",o:"Kriminalvården",s:"krim",sub:"Anstalt och häkte",city:"Malmö",lat:55.61,lng:13.035,t:"Vuxna dömda till fängelse",kw:"kriminalvårdare, programledare",v:1,u:"https://www.kriminalvarden.se"},
+ {n:"Häktet Malmö",o:"Kriminalvården",s:"krim",sub:"Anstalt och häkte",city:"Malmö",lat:55.595,lng:12.985,t:"Häktade och anhållna vuxna",kw:"kriminalvårdare",v:1,u:"https://www.kriminalvarden.se"},
+ {n:"Anstalten Ystad",o:"Kriminalvården",s:"krim",sub:"Anstalt och häkte",city:"Ystad",lat:55.435,lng:13.83,t:"Vuxna dömda till fängelse",kw:"kriminalvårdare",v:1,u:"https://www.kriminalvarden.se"},
+ {n:"Häktet och anstalten Kristianstad",o:"Kriminalvården",s:"krim",sub:"Anstalt och häkte",city:"Kristianstad",lat:56.02,lng:14.14,t:"Häktade och dömda vuxna (nytt häkte med 120 platser)",kw:"kriminalvårdare",v:1,u:"https://www.kriminalvarden.se"},
+ {n:"Häktet Helsingborg",o:"Kriminalvården",s:"krim",sub:"Anstalt och häkte",city:"Helsingborg",lat:56.05,lng:12.70,t:"Häktade vuxna, bland annat kvinnor från regionen",kw:"kriminalvårdare",v:1,u:"https://www.kriminalvarden.se"},
+ {n:"Frivården Malmö",o:"Kriminalvården",s:"krim",sub:"Frivård",city:"Malmö",lat:55.60,lng:12.975,t:"Klienter med skyddstillsyn, villkorlig frigivning, samhällstjänst",kw:"frivårdsinspektör, programledare",v:0,u:"https://www.kriminalvarden.se"},
+ {n:"Frivården Kristianstad",o:"Kriminalvården",s:"krim",sub:"Frivård",city:"Kristianstad",lat:56.03,lng:14.15,t:"Klienter i frivård",kw:"kriminalvårdare, frivårdsinspektör",v:1,u:"https://www.kriminalvarden.se"},
+ {n:"Frivården Helsingborg",o:"Kriminalvården",s:"krim",sub:"Frivård",city:"Helsingborg",lat:56.045,lng:12.69,t:"Klienter i frivård",kw:"frivårdsinspektör",v:0,u:"https://www.kriminalvarden.se"},
+ {n:"Stödcentrum Malmö",o:"Malmö stad",s:"krim",sub:"Stödcentrum för unga brottsutsatta",city:"Malmö",lat:55.605,lng:12.99,t:"Unga brottsutsatta, vittnen och anhöriga",kw:"stödsamtalare, socialsekreterare",v:1,u:"https://malmo.se/stodcentrum"},
+ {n:"Kriscentrum Mellersta Skåne",o:"Lund m.fl. kommuner",s:"krim",sub:"Stödcentrum för unga brottsutsatta",city:"Lund",lat:55.70,lng:13.195,t:"Barn och vuxna i Burlöv, Eslöv, Höör, Kävlinge, Lomma, Lund och Staffanstorp",kw:"samtalsbehandlare",v:1,u:G("Kriscentrum Mellersta Skåne")},
+ {n:"Kriscentrum Kristianstad",o:"Kristianstads kommun",s:"krim",sub:"Stödcentrum för unga brottsutsatta",city:"Kristianstad",lat:56.04,lng:14.15,t:"Barn och unga i Kristianstad och tre grannkommuner",kw:"samtalsbehandlare",v:1,u:"https://www.kristianstad.se"},
+ // Arbetsmarknad
+ {n:"Arbetsmarknadsavdelningen Malmö (Jobb Malmö)",o:"Malmö stad",s:"arb",sub:"Arbetsmarknadsenheter (AME)",city:"Malmö",lat:55.605,lng:13.015,t:"Arbetssökande med försörjningsstöd, unga vuxna",kw:"arbetsmarknadskonsulent, jobbcoach, arbetshandledare",v:0,u:"https://malmo.se"},
+ {n:"Arbetsmarknadsenheten Lund",o:"Lunds kommun",s:"arb",sub:"Arbetsmarknadsenheter (AME)",city:"Lund",lat:55.70,lng:13.17,t:"Arbetssökande långt från arbetsmarknaden",kw:"jobbcoach, arbetskonsulent",v:0,u:"https://lund.se"},
+ {n:"Arbetsmarknadsförvaltningen Helsingborg",o:"Helsingborgs stad",s:"arb",sub:"Arbetsmarknadsenheter (AME)",city:"Helsingborg",lat:56.04,lng:12.69,t:"Arbetssökande, ekonomiskt bistånd",kw:"arbetsmarknadskonsulent",v:0,u:"https://helsingborg.se"},
+ {n:"Samordningsförbundet Finsam Malmö",o:"Finsam",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Malmö",lat:55.61,lng:13.00,t:"Personer i behov av samordnad rehabilitering",kw:"processledare, samordnare",v:1,u:G("Samordningsförbundet Finsam Malmö")},
+ {n:"Lunds samordningsförbund",o:"Finsam",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Lund",lat:55.705,lng:13.175,t:"Personer i behov av samordnad rehabilitering",kw:"processledare",v:1,u:G("Lunds samordningsförbund")},
+ {n:"Finsam MittSkåne",o:"Eslöv, Höör, Hörby m.fl.",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Eslöv",lat:55.84,lng:13.31,t:"Invånare i Eslöv, Höör och Hörby",kw:"projektledare, samordnare",v:1,u:G("Finsam MittSkåne")},
+ {n:"Samordningsförbundet Skåne Nordost",o:"Finsam",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Kristianstad",lat:56.03,lng:14.165,t:"Nordöstra Skåne",kw:"processledare",v:1,u:G("Samordningsförbundet Skåne Nordost")},
+ {n:"Sydöstra Skånes samordningsförbund",o:"Finsam",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Ystad",lat:55.43,lng:13.82,t:"Sydöstra Skåne",kw:"processledare",v:1,u:G("Sydöstra Skånes samordningsförbund")},
+ {n:"Samordningsförbundet BKSV",o:"Burlöv, Kävlinge, Staffanstorp, Vellinge",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Staffanstorp",lat:55.64,lng:13.21,t:"Invånare i de fyra kommunerna",kw:"processledare",v:1,u:G("Samordningsförbundet Burlöv Kävlinge Staffanstorp Vellinge")},
+ {n:"Nordvästra Skånes samordningsförbund",o:"Finsam",s:"arb",sub:"Samordningsförbund (Finsam)",city:"Helsingborg",lat:56.055,lng:12.70,t:"Nordvästra Skåne",kw:"processledare",v:1,u:G("Nordvästra Skånes samordningsförbund")},
+ {n:"Röda Korsets behandlingscenter Malmö",o:"Svenska Röda Korset",s:"arb",sub:"Integrationsverksamheter",city:"Malmö",lat:55.60,lng:13.005,t:"Krigs- och tortyrskadade flyktingar",kw:"socialarbetare, samordnare",v:1,u:"https://www.rodakorset.se"},
+ // NGO
+ {n:"Röda Korset Malmö och Lund",o:"Svenska Röda Korset",s:"ngo",sub:"Ideella organisationer",city:"Malmö / Lund",lat:55.655,lng:13.10,t:"Ensamma, nyanlända, familjer i utsatthet – mötesplatser och läxhjälp",kw:"volontärsamordnare, verksamhetsledare",v:0,u:"https://www.rodakorset.se"},
+ {n:"Rädda Barnen Malmö",o:"Rädda Barnen",s:"ngo",sub:"Ideella organisationer",city:"Malmö",lat:55.595,lng:13.03,t:"Barn och familjer, föräldrastöd och fritidsverksamhet",kw:"verksamhetsutvecklare, samordnare",v:0,u:"https://www.raddabarnen.se"},
+ {n:"Skåne Stadsmission – Kreativa verkstaden",o:"Skåne Stadsmission",s:"ngo",sub:"Ideella organisationer",city:"Kristianstad",lat:56.025,lng:14.17,t:"Vuxna i utsatthet, arbetsträning och gemenskap",kw:"arbetshandledare, verksamhetsledare",v:1,u:"https://www.skanestadsmission.se"},
+ {n:"Fontänhuset Helsingborg",o:"Stiftelsen Gemenskap och Arbete",s:"ngo",sub:"Ideella organisationer",city:"Helsingborg",lat:56.035,lng:12.70,t:"Vuxna med psykisk ohälsa – klubbhusmodellen",kw:"handledare",v:1,u:G("Fontänhuset Helsingborg")},
+ {n:"RFSL Rådgivningen Skåne",o:"RFSL",s:"ngo",sub:"Ideella organisationer",city:"Malmö",lat:55.60,lng:13.00,t:"Hbtqi-personer, sexuell hälsa och stöd",kw:"rådgivare, kurator",v:1,u:"https://radgivningenskane.rfsl.se"},
+ {n:"Kvinno- och tjejjourer i Malmö och Lund",o:"Lokala jourer",s:"ngo",sub:"Ideella organisationer",city:"Malmö / Lund",lat:55.65,lng:13.08,t:"Kvinnor och tjejer utsatta för våld, skyddat boende",kw:"stödperson, verksamhetsledare",v:0,u:G("kvinnojour tjejjour Malmö Lund")},
+ {n:"RF-SISU Skåne",o:"Idrottsrörelsen",s:"ngo",sub:"Idrottsrörelsen",city:"Malmö",lat:55.565,lng:12.99,t:"Föreningar och unga – idrott som social insats",kw:"idrottskonsulent, föreningsutvecklare",v:0,u:"https://www.rfsisu.se/distrikt/skane"},
+ // Psykiatri
+ {n:"Vuxenpsykiatri beroende, avd 1 Malmö",o:"Region Skåne",s:"psyk",sub:"Psykiatrisk öppen- och slutenvård",city:"Malmö",lat:55.59,lng:12.99,t:"Vuxna med beroende i heldygnsvård",kw:"skötare, behandlingsassistent",v:1,u:"https://www.1177.se/Skane"},
+ {n:"Vuxenpsykiatri beroende, avd 8 Lund",o:"Region Skåne",s:"psyk",sub:"Psykiatrisk öppen- och slutenvård",city:"Lund",lat:55.715,lng:13.20,t:"Vuxna med beroende i heldygnsvård",kw:"skötare, mentalskötare",v:1,u:"https://www.1177.se/Skane"},
+ {n:"Psykiatrisk öppenvård Helsingborg",o:"Region Skåne",s:"psyk",sub:"Psykiatrisk öppen- och slutenvård",city:"Helsingborg",lat:56.03,lng:12.72,t:"Vuxna med psykisk ohälsa",kw:"case manager, behandlingsassistent",v:0,u:"https://www.1177.se/Skane"},
+ {n:"Psykiatri Kristianstad (CSK)",o:"Region Skåne",s:"psyk",sub:"Psykiatrisk öppen- och slutenvård",city:"Kristianstad",lat:56.02,lng:14.16,t:"Vuxna med psykisk ohälsa",kw:"skötare, miljöterapeut",v:0,u:"https://www.1177.se/Skane"},
+ {n:"BUP Malmö",o:"Region Skåne",s:"psyk",sub:"Psykiatrisk öppen- och slutenvård",city:"Malmö",lat:55.585,lng:12.995,t:"Barn och unga med psykisk ohälsa",kw:"behandlingsassistent, miljöterapeut",v:0,u:"https://www.1177.se/Skane"},
+ // ASF
+ {n:"Stilla – socialt företag",o:"Stilla koncernen ekonomisk förening",s:"asf",sub:"Arbetsintegrerande sociala företag (ASF)",city:"Malmö",lat:55.60,lng:13.02,t:"Personer långt från arbetsmarknaden",kw:"arbetshandledare, handledare",v:1,u:G("Stilla koncernen ekonomisk förening Malmö")},
+ {n:"Coompanion Skåne – ASF-nätverk",o:"Coompanion",s:"asf",sub:"Arbetsintegrerande sociala företag (ASF)",city:"Malmö",lat:55.607,lng:12.995,t:"Sociala företag och unga arbetslösa (inkubator)",kw:"verksamhetsledare, coach",v:1,u:G("Coompanion Skåne sociala företag")}
+];
+
+const TOWNS = [["Bjuv",56.08,12.92],["Bromölla",56.07,14.47],["Burlöv (Arlöv)",55.64,13.08],["Båstad",56.43,12.85],["Eslöv",55.839,13.304],["Helsingborg",56.046,12.694],["Hässleholm",56.159,13.766],["Höganäs",56.20,12.56],["Hörby",55.855,13.662],["Höör",55.937,13.54],["Klippan",56.13,13.13],["Kristianstad",56.031,14.156],["Kävlinge",55.79,13.11],["Landskrona",55.87,12.83],["Lomma",55.67,13.07],["Lund",55.705,13.191],["Malmö",55.605,13.0],["Osby",56.38,13.99],["Perstorp",56.14,13.40],["Simrishamn",55.56,14.35],["Sjöbo",55.631,13.706],["Skurup",55.48,13.50],["Staffanstorp",55.64,13.21],["Svalöv",55.913,13.104],["Svedala",55.51,13.24],["Tomelilla",55.545,13.95],["Trelleborg",55.376,13.157],["Vellinge",55.47,13.02],["Ystad",55.43,13.82],["Åstorp",56.13,12.94],["Ängelholm",56.243,12.862],["Örkelljunga",56.28,13.28],["Östra Göinge (Broby)",56.25,14.08]];
+
+const FAV = new Set(["HVB-hem och SiS","Behandlingshem"]);
+const secById = Object.fromEntries(SECTORS.map(s=>[s.id,s]));
+const $ = id=>document.getElementById(id);
+const store = { get(k){try{return JSON.parse(localStorage.getItem("lia:"+k))}catch(e){return null}}, set(k,v){try{localStorage.setItem("lia:"+k,JSON.stringify(v))}catch(e){}} };
+
+let home = store.get("home") || {name:"Malmö",lat:55.605,lng:13.0};
+let active = new Set(store.get("sectors") || []);
+let selected = null;
+let pickMode = false;
+
+function km(a,b){const R=6371,r=Math.PI/180;const dLa=(b.lat-a.lat)*r,dLo=(b.lng-a.lng)*r;const h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+P.forEach((p,i)=>{p.id=i;p.fav=FAV.has(p.sub)});
+
+// --- plats ---
+const townSel=$("town");
+function fillTowns(){
+  townSel.innerHTML="";
+  const custom=!TOWNS.some(t=>t[0]===home.name);
+  if(custom){const o=document.createElement("option");o.value="__c";o.textContent=home.name;townSel.append(o)}
+  TOWNS.forEach(t=>{const o=document.createElement("option");o.value=t[0];o.textContent=t[0];townSel.append(o)});
+  townSel.value=custom?"__c":home.name;
+}
+townSel.addEventListener("change",()=>{const t=TOWNS.find(t=>t[0]===townSel.value);if(t){setHome({name:t[0],lat:t[1],lng:t[2]});msg("")}});
+function setHome(h){home=h;store.set("home",h);fillTowns();render()}
+function msg(t){$("locmsg").textContent=t}
+$("geo").addEventListener("click",()=>{
+  if(!navigator.geolocation){msg("Den här vyn kan inte läsa din position. Välj ort eller klicka på kartan.");return}
+  msg("Hämtar position…");
+  navigator.geolocation.getCurrentPosition(p=>{setHome({name:"Min position",lat:p.coords.latitude,lng:p.coords.longitude});msg("Position hämtad.")},
+    ()=>msg("Positionen delades inte här. Välj din ort i listan eller klicka på kartan där du bor."),{timeout:8000});
+});
+$("pick").addEventListener("click",()=>{pickMode=!pickMode;$("mapbox").classList.toggle("setting",pickMode);$("pick").classList.toggle("primary",pickMode);msg(pickMode?"Klicka på kartan där du bor.":"")});
+
+// --- filter ---
+function buildChips(){
+  const c=$("chips");c.innerHTML="";
+  SECTORS.forEach(s=>{
+    const b=document.createElement("button");b.type="button";b.className="chip";b.style.setProperty("--c",`var(${s.c})`);
+    b.setAttribute("aria-pressed",active.has(s.id));
+    const n=P.filter(p=>p.s===s.id).length;
+    b.innerHTML=`<span class="dot"></span>${s.name}<span class="n">${n}</span>`;
+    b.onclick=()=>{active.has(s.id)?active.delete(s.id):active.add(s.id);store.set("sectors",[...active]);buildChips();buildSubs();render()};
+    c.append(b);
+  });
+  const lg=$("legend");lg.innerHTML=SECTORS.map(s=>`<span><i style="--c:var(${s.c})"></i>${s.name}</span>`).join("")+`<span><i style="--c:var(--home)"></i>Du</span>`;
+}
+function buildSubs(){
+  const sel=$("sub"),cur=sel.value;sel.innerHTML='<option value="">Alla underkategorier</option>';
+  SECTORS.filter(s=>!active.size||active.has(s.id)).forEach(s=>{const g=document.createElement("optgroup");g.label=s.name;s.subs.forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;g.append(o)});sel.append(g)});
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:"";
+}
+["sub","maxkm","q","sort"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="maxkm")store.set("maxkm",$("maxkm").value);render()}));
+const mk=store.get("maxkm");if(mk)$("maxkm").value=mk;
+
+function filtered(){
+  const sub=$("sub").value,max=+$("maxkm").value,q=$("q").value.trim().toLowerCase();
+  let r=P.map(p=>({...p,d:km(home,p)})).filter(p=>(!active.size||active.has(p.s))&&(!sub||p.sub===sub)&&(max>=200||p.d<=max)&&(!q||(p.n+" "+p.o+" "+p.city+" "+p.t+" "+p.kw+" "+p.sub).toLowerCase().includes(q)));
+  const s=$("sort").value;
+  r.sort(s==="name"?(a,b)=>a.n.localeCompare(b.n,"sv"):s==="fav"?(a,b)=>(b.fav-a.fav)||(a.d-b.d):(a,b)=>a.d-b.d);
+  return r;
+}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const max=+$("maxkm").value;$("kmout").textContent=max>=200?"alla":max+" km";
+  const r=filtered();
+  $("count").textContent=`${r.length} av ${P.length} arbetsplatser · från ${home.name}`;
+  const L=$("list");
+  if(!r.length){L.innerHTML='<div class="empty">Inga arbetsplatser matchar. Öka max avstånd eller välj fler branscher.</div>'}
+  else L.innerHTML=r.map(p=>{
+    const s=secById[p.s],ref=REF[p.s];
+    const isG=p.u.startsWith("https://www.google.com");
+    return `<article class="card${selected===p.id?" sel":""}" id="c${p.id}" style="--c:var(${s.c})">
+      <div class="hd"><div><h3>${esc(p.n)}</h3><div class="meta">${esc(p.o)} · ${esc(p.city)}</div></div><div class="dist">${p.d<1?"<1":Math.round(p.d)} km</div></div>
+      <div class="tags">${p.fav?'<span class="badge fav">Förstahandsval</span>':""}<span class="tag">${esc(p.sub)}</span><span class="badge ${p.v?"ok":"chk"}">${p.v?"Bekräftad":"Kontrollera"}</span></div>
+      <dl class="kv"><dt>Målgrupp</dt><dd>${esc(p.t)}</dd><dt>Sök på titeln</dt><dd>${esc(p.kw)}</dd><dt>Beslutar om LIA</dt><dd>${esc(ref.dec)}</dd></dl>
+      <div class="links"><a href="${p.u}" target="_blank" rel="noopener">${isG?"Sök kontakt":"Webbplats"} ↗</a><a href="https://arbetsformedlingen.se/platsbanken/annonser?q=${encodeURIComponent(p.kw.split(",")[0].trim()+" "+p.city.split(" ")[0])}" target="_blank" rel="noopener">Platsbanken ↗</a><a href="#" data-show="${p.id}">Visa på kartan</a><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.n+" "+p.city)}" target="_blank" rel="noopener">Google Maps ↗</a></div>
+    </article>`}).join("");
+  L.querySelectorAll("[data-show]").forEach(a=>a.onclick=e=>{e.preventDefault();select(+a.dataset.show,true)});
+  drawPoints(r);
+}
+
+// --- karta (Leaflet + OpenStreetMap) ---
+const map=L.map("map",{zoomControl:true}).setView([55.85,13.45],8);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+const layer=L.layerGroup().addTo(map);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim()||"#0e6f73";
+function jit(p){const a=(p.id*137.5)*Math.PI/180,r=(p.id%5)*0.0012+0.001;return [p.lat+Math.sin(a)*r,p.lng+Math.cos(a)*r*1.8]}
+const markers={};let lastPts=[];
+function drawPoints(r){
+  lastPts=r||lastPts;layer.clearLayers();
+  const max=+$("maxkm").value;
+  if(max<200)L.circle([home.lat,home.lng],{radius:max*1000,color:css("--accent"),weight:1.5,dashArray:"6 5",fillOpacity:.06,interactive:false}).addTo(layer);
+  lastPts.forEach(p=>{const s=secById[p.s],sel=p.id===selected;
+    const m=L.circleMarker(jit(p),{radius:sel?11:p.fav?8:6,color:sel?"#111":"#fff",weight:sel?3:1.5,fillColor:css(s.c),fillOpacity:.95}).addTo(layer);
+    m.bindPopup(`<b>${esc(p.n)}</b><br>${esc(p.city)} · ${Math.round(p.d)} km<br><span style="color:#555">${esc(p.sub)}</span><br><a href="#c${p.id}" data-card="${p.id}">Visa i listan</a> · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.n+" "+p.city)}" target="_blank" rel="noopener">Google Maps</a>`);
+    m.on("click",()=>{selected=p.id;highlight()});
+    markers[p.id]=m;});
+  L.circleMarker([home.lat,home.lng],{radius:9,color:"#fff",weight:2,fillColor:css("--home"),fillOpacity:1}).bindTooltip("Du: "+home.name).addTo(layer);
+}
+function highlight(){document.querySelectorAll(".card.sel").forEach(c=>c.classList.remove("sel"));const c=$("c"+selected);if(c){c.classList.add("sel");c.scrollIntoView({block:"nearest",behavior:"smooth"})}}
+map.on("popupopen",e=>{const a=e.popup.getElement().querySelector("[data-card]");if(a)a.onclick=ev=>{ev.preventDefault();selected=+a.dataset.card;highlight()}});
+function select(id,fromList){
+  selected=id;render();const p=P[id];
+  map.flyTo(jit(p),13,{duration:.6});setTimeout(()=>markers[id]&&markers[id].openPopup(),650);
+  if(fromList)$("mapbox").scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+map.on("click",e=>{if(!pickMode)return;setHome({name:"Vald punkt på kartan",lat:+e.latlng.lat.toFixed(4),lng:+e.latlng.lng.toFixed(4)});pickMode=false;$("mapbox").classList.remove("setting");$("pick").classList.remove("primary");msg("Din plats är satt.")});
+
+// --- referenstabell ---
+$("reftbody").innerHTML=SECTORS.map(s=>{const r=REF[s.id];return `<tr style="--c:var(${s.c})"><td><span class="sw"></span><strong>${s.name}</strong><div class="meta">${s.subs.join(" · ")}</div></td><td>${r.kw}</td><td>${r.dec}</td><td>${r.how}</td></tr>`}).join("");
+
+fillTowns();buildChips();buildSubs();render();
+</script>
+
+</body>
+</html>
