@@ -110,7 +110,39 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible,.c
 .mark{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 6px;cursor:pointer;white-space:nowrap;background:var(--bg)}
 .mark input{accent-color:var(--ok);margin:0;width:15px;height:15px}
 .mark.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
-.card.done{opacity:.72}
+.st-row{display:flex;gap:6px;align-items:center}
+.status{font-size:.78rem;padding:3px 6px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);max-width:11rem}
+.status.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+.status.st-nej{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.status.st-intervju,.status.st-klart{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.star{background:none;border:1px solid var(--line);border-radius:999px;width:30px;height:28px;padding:0;font-size:1rem;line-height:1;color:var(--muted);cursor:pointer}
+.star[aria-pressed="true"]{color:#d99a00;border-color:#d99a00;background:var(--warn-soft)}
+.stdate{font-size:.72rem;color:var(--muted)}
+.badge.due{background:var(--home);color:#fff}
+.notes{border-top:1px solid var(--line);padding-top:6px}
+.notes summary{cursor:pointer;font-weight:600;font-size:.88rem;color:var(--accent);padding:4px 0}
+.notes textarea{width:100%;min-height:70px;font:inherit;font-size:.86rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:vertical}
+.notes .frow{margin-top:6px;font-size:.85rem}
+.notes input[type=date]{font:inherit;font-size:.85rem;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem}
+dialog.mail{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:16px;width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog.mail::backdrop{background:rgba(0,0,0,.45)}
+dialog.mail h2{font-size:1.1rem;margin:0 0 8px}
+dialog.mail .mf{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:8px}
+dialog.mail label{font-size:.78rem;color:var(--muted);display:grid;gap:2px}
+dialog.mail input,dialog.mail textarea{font:inherit;font-size:.88rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box}
+dialog.mail textarea{min-height:300px;resize:vertical}
+dialog.mail .frow{margin-top:10px}
+section.ads{margin-top:32px;display:grid;gap:12px}
+.adlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:10px}
+.ad{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:10px;padding:10px 12px;display:grid;gap:4px;min-width:0;font-size:.86rem}
+.ad h3{font-size:.95rem}
+.ad.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.ad a{word-break:break-word}
+.admk{display:block;width:10px;height:10px;background:#fff;border:3px solid #222;transform:rotate(45deg);box-shadow:0 0 0 1px #fff}
+.badge.adv{background:var(--ink);color:var(--bg)}
+.card.done{opacity:.6}
 .card.done:hover,.card.done:focus-within{opacity:1}
 .contact{border-top:1px solid var(--line);padding-top:6px}
 .contact summary{cursor:pointer;font-weight:600;font-size:.88rem;color:var(--accent);padding:4px 0}
@@ -173,12 +205,14 @@ td .sw{display:inline-block;width:10px;height:10px;border-radius:50%;background:
       <select id="sort" aria-label="Sortering">
         <option value="dist">Närmast först</option>
         <option value="fav">HVB/behandling först</option>
+        <option value="star">Stjärnmärkta först</option>
         <option value="name">A–Ö</option>
       </select>
-      <select id="markf" aria-label="Kontaktstatus"><option value="all">Alla</option><option value="yes">Markerade (kontaktade)</option><option value="no">Omarkerade</option></select>
+      <select id="markf" aria-label="Status"></select>
       <label class="chk-row"><input type="checkbox" id="onlyboss"> Bara med chefskontakt</label>
       <span class="count" id="count"></span>
     </div>
+    <div class="toolbar"><span class="meta">Dina markeringar sparas bara i den här webbläsaren:</span><button type="button" id="exp">Exportera backup</button><button type="button" id="impb">Importera backup</button><input type="file" id="imp" accept="application/json,.json" hidden><span class="meta" id="bkmsg" aria-live="polite"></span></div>
   </div>
 
   <div class="main">
@@ -191,6 +225,17 @@ td .sw{display:inline-block;width:10px;height:10px;border-radius:50%;background:
       <div class="legend" id="legend"></div>
     </div>
   </div>
+
+  <section class="ads" id="annonser">
+    <div>
+      <div class="eyebrow">Live från Platsbanken</div>
+      <h2>Aktuella annonser i Skåne</h2>
+      <p class="lede">Hämtas direkt från Arbetsförmedlingens öppna API varje gång sidan laddas. En arbetsplats som rekryterar har ofta behov av folk – och annonsen har ofta namn och nummer till chefen. Avståndsfiltret ovan gäller även här.</p>
+    </div>
+    <div class="chips" id="adkw" role="group" aria-label="Sökord för annonser"></div>
+    <div class="frow"><label class="chk-row"><input type="checkbox" id="adsmap" checked> Visa annonser på kartan (svarta romber)</label><span class="count" id="adscount"></span></div>
+    <div class="adlist" id="adlist"><div class="empty">Hämtar annonser…</div></div>
+  </section>
 
   <section class="ref" id="sokord">
     <div>
@@ -230,19 +275,31 @@ td .sw{display:inline-block;width:10px;height:10px;border-radius:50%;background:
       </div>
     </div>
   </section>
-  <p class="foot">Karta: © OpenStreetMap-bidragsgivare. Sammanställt 19 november 2026 från platsannonser, HVBGuiden, kommunernas webbplatser, SiS, Kriminalvården och idéburna organisationers egna sidor. Kartan är ritad förenklat och visar inte exakta adresser.</p>
+  <p class="foot">Karta: © OpenStreetMap-bidragsgivare. Sammanställt 19 november 2026 från platsannonser, HVBGuiden, LSSGuiden, kommunernas webbplatser, SiS, Kriminalvården och idéburna organisationers egna sidor. Kartan är ritad förenklat och visar inte exakta adresser.</p>
 </div>
 
+<dialog class="mail" id="mailbox" aria-labelledby="mailh">
+  <h2 id="mailh">Mejlmall</h2>
+  <div class="mf">
+    <label>Ditt namn<input id="me_name" autocomplete="name"></label>
+    <label>Din telefon<input id="me_tel" autocomplete="tel"></label>
+    <label>Utbildning och skola<input id="me_edu" placeholder="t.ex. Socialpedagog, YH-skolan X"></label>
+    <label>LIA-period<input id="me_per" placeholder="t.ex. v. 3–12 2027"></label>
+  </div>
+  <div class="mf"><label>Till<input id="m_to" type="email"></label><label>Ämne<input id="m_subj"></label></div>
+  <textarea id="m_body" aria-label="Mejltext"></textarea>
+  <div class="frow"><button type="button" class="primary" id="m_copy">Kopiera text</button><a id="m_open" href="#">Öppna i mejlprogrammet ↗</a><button type="button" id="m_mark">Markera som mejlat</button><button type="button" id="m_close">Stäng</button><span class="meta" id="m_msg" aria-live="polite"></span></div>
+</dialog>
 <script>
 const SECTORS = [
- {id:"skola", name:"Skola och utbildning", c:"--s9", subs:["Grund- och gymnasieskola","Folkhögskola och vuxenutbildning","Anpassad skola"]},
+ {id:"skola", name:"Skola och utbildning", c:"--s9", subs:["Grund- och gymnasieskola","Resursskola och särskild undervisningsgrupp","Anpassad skola","Folkhögskola och vuxenutbildning"]},
  {id:"barn", name:"Barn, unga och familj", c:"--s1", subs:["HVB-hem och SiS","Stödboenden","Fältarbete och fritidsgårdar","Familjebehandling och öppenvård"]},
- {id:"lss", name:"Funktionsnedsättning", c:"--s3", subs:["Grupp- och servicebostäder (LSS)","Daglig verksamhet","Boendestöd (SoL)","Personlig assistans"]},
+ {id:"lss", name:"Funktionsnedsättning", c:"--s3", subs:["Grupp- och servicebostäder (LSS)","Daglig verksamhet","Boendestöd (SoL)","Korttidsvistelse och LSS för barn","Personlig assistans"]},
  {id:"beroende", name:"Beroendevård och hemlöshet", c:"--s2", subs:["Behandlingshem","Akutboenden och härbärgen","Sprututbyte och lågtröskel"]},
  {id:"krim", name:"Kriminalvård och rättsväsende", c:"--s5", subs:["Anstalt och häkte","Frivård","Stödcentrum för unga brottsutsatta"]},
  {id:"arb", name:"Arbetsmarknad och integration", c:"--s6", subs:["Arbetsmarknadsenheter (AME)","Samordningsförbund (Finsam)","Integrationsverksamheter"]},
- {id:"ngo", name:"Civilsamhälle och idéburet", c:"--s7", subs:["Ideella organisationer","Idrottsrörelsen"]},
- {id:"psyk", name:"Psykiatri och hälso- och sjukvård", c:"--s8", subs:["Psykiatrisk öppen- och slutenvård"]},
+ {id:"ngo", name:"Civilsamhälle och idéburet", c:"--s7", subs:["Ideella organisationer","Jourer och stödlinjer","Kyrkans sociala arbete","Idrottsrörelsen"]},
+ {id:"psyk", name:"Psykiatri och hälso- och sjukvård", c:"--s8", subs:["Psykiatrisk öppen- och slutenvård","Habilitering"]},
  {id:"asf", name:"Arbetsintegrerande sociala företag", c:"--s4", subs:["Arbetsintegrerande sociala företag (ASF)"]}
 ];
 
@@ -473,6 +530,191 @@ const P = [
 ];
 
 
+// ===== Tillägg nov 2026: fler kommuner, LSS, skolor, habilitering, idéburna =====
+(function(){
+const A=[];
+// sprid punkter med samma ort lite så de inte hamnar på varandra
+let k=0;const sp=(lat,lng)=>{k++;const a=k*2.399,r=0.0025*Math.sqrt(k%40+1);return [+(lat+Math.sin(a)*r).toFixed(5),+(lng+Math.cos(a)*r*1.8).toFixed(5)]};
+const add=(o,lat,lng)=>{const [la,ln]=sp(lat,lng);A.push({lat:la,lng:ln,v:1,...o})};
+const HB=[56.046,12.694],KR=[56.031,14.156],MA=[55.605,13.0],LU=[55.705,13.191];
+
+// --- Kristianstad ---
+const KRS="https://www.kristianstad.se/omsorgochhjalp/";
+add({n:"Fältgruppen Kristianstad",o:"Kristianstads kommun",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Kristianstad",t:"Unga 12–20 år och deras föräldrar, uppsökande och förebyggande; drogförebyggande upp till 25 år",kw:"fältsekreterare, fältassistent",u:KRS+"familjbarnochungdom/stodtilldigsomarung/faltgruppen.1429.html",addr:"Lasarettsboulevarden 4B plan 5, 291 33 Kristianstad",tel:"044-13 60 79",mail:"faltgruppen@kristianstad.se",c:[{r:"Enhetschef",n:"Mathias Ivarsson",t:"044-13 62 92",m:"mathias.ivarsson@kristianstad.se"},{r:"Teamledare",n:"Malin Månsson",t:"0733-13 95 31",m:"malin.mansson@kristianstad.se"}]},...KR);
+add({n:"Barn- och ungdomsteamet Kristianstad",o:"Kristianstads kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Kristianstad",t:"Barn och unga som har det svårt hemma eller i skolan, mobbning, risk för brott eller missbruk; familjebehandling",kw:"familjebehandlare, behandlare",u:KRS+"familjbarnochungdom/stodtilldigsomarung.1425.html",addr:"J A Hedlunds väg 17, 291 33 Kristianstad (besöksadress enligt sidan)",tel:"044-13 50 00",note:"Ring Medborgarcenter och be att bli kopplad till enhetschefen för barn- och ungdomsteamet."},...KR);
+add({n:"Ungdomsbasen Kristianstad",o:"Kristianstads kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Kristianstad",t:"Unga i Kristianstad – stöd och samtal",kw:"behandlare, socialpedagog",v:0,u:KRS+"familjbarnochungdom/stodtilldigsomarung/ungdomsbasen.1430.html",tel:"044-13 50 00"},...KR);
+add({n:"Maria Skåne Nordost",o:"Region Skåne och kommunerna",s:"barn",sub:"Familjebehandling och öppenvård",city:"Kristianstad",t:"Unga under 25 år med alkohol- eller drogproblem i nordöstra Skåne",kw:"behandlare, socialpedagog",u:KRS+"familjbarnochungdom/stodtilldigsomarung/mariaskanenordost.1431.html",tel:"044-309 35 36"},...KR);
+add({n:"Kompassen – Stöd- och serviceenheten",o:"Kristianstads kommun",s:"lss",sub:"Daglig verksamhet",city:"Kristianstad",t:"Personer med beslut om daglig verksamhet/sysselsättning enligt LSS eller SoL",kw:"arbetskonsulent, stödpedagog, arbetshandledare",u:KRS+"funktionsnedsattning/dagligverksamhetarbeteochsysselsattning/kompassen.1315.html",addr:"Vattentornsvägen 9, 291 32 Kristianstad",tel:"0733-13 54 61",c:[{r:"Arbetskonsulent/samordnare",n:"Marina Olsson",t:"0733-13 54 61",m:"marina.olsson@kristianstad.se"},{r:"Stödpedagog",n:"Anna-Lena Johnsson",t:"044-13 20 24",m:"Anna-Lena.Johnsson@kristianstad.se"},{r:"Arbetskonsulent",n:"Heléne Möllerström",t:"0733-13 63 24",m:"helene.mollerstrom@kristianstad.se"},{r:"Arbetskonsulent",n:"Fanny Brodersen",t:"0733-13 15 60",m:"fanny.brodersen@kristianstad.se"}]},...KR);
+add({n:"Autismverksamhet Kasernvillan",o:"Kristianstads kommun",s:"lss",sub:"Daglig verksamhet",city:"Kristianstad",t:"Vuxna med intellektuell funktionsnedsättning och autism",kw:"stödpedagog, aktivitetshandledare",u:KRS+"funktionsnedsattning/dagligverksamhetarbeteochsysselsattning/autismverksamhetkasernvillan.1278.html",addr:"Artillerivägen 7, 291 63 Kristianstad",tel:"044-13 69 95"},...KR);
+["Ateljén","Autismverksamhet Agda","Autismverksamhet Lingus","Autismverksamhet Mässen","Autismverksamhet Spektrum","Bilomsorgen","Café Barbacka","Café Finland","Café Polisen","Café Rådhuset","Café Skulptören","Daglig verksamhet Gärdskan","Daglig verksamhet Hälsoträdgården","Daglig verksamhet Odal","Fredskog","Fritidsbanken (daglig verksamhet)","Gården","Individintegrerad verksamhet","Iris","Kanonen","Kanot- och vandringsleden","Kulturverksamheten","Loket","Mellansteg EKO","Lyktangruppen","Maxi","Möbellagret och Intern service","Opus","Ork&Idé","Saveko","Skattecaféet","Sy&Så","Tollarps aktivitetshus","Trettiettan","Trädgårdsgruppen"].forEach(x=>add({n:x+" (Kristianstad)",o:"Kristianstads kommun",s:"lss",sub:"Daglig verksamhet",city:x.includes("Tollarp")?"Tollarp (Kristianstad)":"Kristianstad",t:"Daglig verksamhet för vuxna med beslut enligt LSS eller SoL",kw:"stödpedagog, arbetshandledare, aktivitetshandledare",u:KRS+"funktionsnedsattning/dagligverksamhetarbeteochsysselsattning.1276.html",tel:"044-13 50 00",note:"Namnet kommer från kommunens lista. Varje verksamhet har en egen sida där – ring Medborgarcenter och be om enhetschefen."},...(x.includes("Tollarp")?[55.93,13.99]:KR)));
+
+// --- Hässleholm ---
+const HS="https://www.hassleholm.se/omsorg-och-stod/",HL=[56.159,13.766];
+add({n:"Socialförvaltningens mottagningsenhet Hässleholm",o:"Hässleholms kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Hässleholm",t:"Barn, unga och vuxna som vill prata eller är oroliga; våldsutsatta",kw:"socialsekreterare, familjebehandlare",u:HS+"stod-for-barn-och-unga/stod-till-dig-som-ar-barn-och-ungdom",tel:"0451-26 70 50",note:"Telefontider: mån 10–11.30 och 13–14.30, tis 13–14.30, ons 10–11.30 och 13–14.30, tor 13–14.30, fre 10–11.30."},...HL);
+add({n:"Individ- och familjesupporten (IFS) Hässleholm",o:"Hässleholms kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Hässleholm",t:"Barn och familjer, bland annat gruppen Skilda världar för barn 7–12 år med separerade föräldrar",kw:"familjebehandlare, familjepedagog",u:HS+"stod-for-barn-och-unga/stod-till-dig-som-ar-barn-och-ungdom",tel:"0451-26 88 60",mail:"iofsupporten@hassleholm.se"},...HL);
+add({n:"Förebyggandecentrum Hässleholm",o:"Hässleholms kommun",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Hässleholm",t:"Unga i riskmiljöer eller utsatta för brott, och oroliga föräldrar",kw:"fältsekreterare, förebyggare, ungdomscoach",u:HS+"stod-for-barn-och-unga/stod-till-dig-som-ar-barn-och-ungdom",tel:"0451-26 72 55",mail:"forebyggandecentrum@hassleholm.se"},...HL);
+add({n:"Backa Barnet Hässleholm",o:"Hässleholms kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Hässleholm",t:"Barn och unga – samverkansmodell kring barnets behov",kw:"socialpedagog, samordnare",v:0,u:HS+"backa-barnet",tel:"0451-26 70 00",mail:"kontaktcenter@hassleholm.se"},...HL);
+add({n:"Stöttecenter Hässleholm (psykisk ohälsa)",o:"Hässleholms kommun",s:"lss",sub:"Boendestöd (SoL)",city:"Hässleholm",t:"Vuxna med psykisk ohälsa",kw:"boendestödjare, stödassistent",v:0,u:HS+"stod-till-dig-som-ar-vuxen/stod-till-vuxna-med-psykisk-ohalsa",tel:"0451-26 70 00",mail:"kontaktcenter@hassleholm.se"},...HL);
+add({n:"Missbruk och beroende vuxna Hässleholm",o:"Hässleholms kommun",s:"beroende",sub:"Behandlingshem",city:"Hässleholm",t:"Vuxna med missbruk eller beroende – öppenvård och stöd",kw:"behandlare, alkohol- och drogterapeut",v:0,u:HS+"stod-till-dig-som-ar-vuxen/stod-for-vuxna-med-missbruk-och-beroende",tel:"0451-26 70 00",mail:"kontaktcenter@hassleholm.se"},...HL);
+add({n:"Daglig verksamhet Hässleholm",o:"Hässleholms kommun",s:"lss",sub:"Daglig verksamhet",city:"Hässleholm",t:"Vuxna med beslut enligt LSS – arbetsinriktad, på företag och i grupp",kw:"stödpedagog, arbetshandledare",v:0,u:HS+"funktionsnedsattning/daglig-verksamhet/grupper-inom-daglig-verksamhet",tel:"0451-26 70 00",mail:"kontaktcenter@hassleholm.se"},...HL);
+
+// --- Landskrona ---
+const LK="https://www.landskrona.se/omsorg-och-hjalp/",LA=[55.87,12.83];
+add({n:"Team tidiga insatser (TTI) Landskrona",o:"Landskrona stad",s:"barn",sub:"Familjebehandling och öppenvård",city:"Landskrona",t:"Alla barn, unga och föräldrar i Landskrona – tidigt stöd utan utredning",kw:"familjebehandlare, socialpedagog",u:LK+"familj-barn-och-ungdom/stod-till-barn-och-ungdom/",addr:"Borgmästargatan 20, Landskrona",tel:"0418-47 33 05",mail:"tidigainsatser@landskrona.se"},...LA);
+add({n:"Fältgruppen Landskrona",o:"Landskrona stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Landskrona",t:"Unga på offentliga platser – kvällstid, fre–lör till midnatt",kw:"fältsekreterare, fältassistent",u:LK+"trygg-och-saker/faltverksamhet/",tel:"0418-47 00 00",mail:"kontaktcenter@landskrona.se"},...LA);
+add({n:"Aktivitetshuset Hamnen",o:"Landskrona stad",s:"lss",sub:"Boendestöd (SoL)",city:"Landskrona",t:"Vuxna med långvarig psykisk ohälsa, öppen mötesplats utan biståndsbeslut",kw:"aktivitetshandledare, stödassistent",u:LK+"psykisk-ohalsa/aktivitetshuset-hamnen/",addr:"Lilla Strandgatan 1, Landskrona",tel:"0418-47 31 56"},...LA);
+add({n:"Mediahuset (daglig verksamhet)",o:"Landskrona stad",s:"lss",sub:"Daglig verksamhet",city:"Landskrona",t:"Vuxna 18–67 år inom LSS personkrets 1 och 2",kw:"stödpedagog, aktivitetshandledare",u:LK+"funktionsnedsattning/daglig-verksamhet-arbete-och-sysselsattning/mediahuset/",addr:"Segergatan 85, Landskrona",tel:"0418-47 00 00"},...LA);
+add({n:"Hjalmar Brantings väg (daglig verksamhet)",o:"Landskrona stad",s:"lss",sub:"Daglig verksamhet",city:"Landskrona",t:"Vuxna inom LSS – individuella placeringar, fixar/trädgård, snickeri",kw:"arbetshandledare, stödpedagog",u:LK+"funktionsnedsattning/daglig-verksamhet-arbete-och-sysselsattning/hjalmar-brantings-vag/",tel:"0418-47 00 00"},...LA);
+
+// --- Trelleborg ---
+const TB="https://www.trelleborg.se/omsorg-och-hjalp/",TR=[55.376,13.157];
+add({n:"Familjecentralen Bryggan",o:"Trelleborgs kommun och Region Skåne",s:"barn",sub:"Familjebehandling och öppenvård",city:"Trelleborg",t:"Familjer med barn upp till förskoleklass; öppen förskola och socialrådgivning",kw:"socialrådgivare, familjepedagog",u:TB+"familj-barn-och-ungdom/familjecentraler/familjecentralen-bryggan/",addr:"Kontinentgatan 4, 231 42 Trelleborg",tel:"0410-73 37 29",c:[{r:"Socialrådgivare",n:"Socialrådgivningen",t:"0410-73 42 87"}]},...TR);
+add({n:"Familjecentralen Myllan",o:"Trelleborgs kommun och Region Skåne",s:"barn",sub:"Familjebehandling och öppenvård",city:"Trelleborg",t:"Familjer med små barn",kw:"socialrådgivare, familjepedagog",v:0,u:TB+"familj-barn-och-ungdom/familjecentraler/",tel:"0410-73 30 00",mail:"kontaktcenter@trelleborg.se"},...TR);
+add({n:"Kastanjegården (stödboende)",o:"Trelleborgs kommun",s:"lss",sub:"Grupp- och servicebostäder (LSS)",city:"Trelleborg",t:"Vuxna med allvarlig psykisk ohälsa; 15 lägenheter med personal dygnet runt",kw:"boendestödjare, stödassistent",u:TB+"psykisk-ohalsa/kastanjegarden/",tel:"0410-73 30 00",mail:"socialpsykiatriskaenheten@trelleborg.se"},...TR);
+add({n:"Ungdomsrådgivning Trelleborg",o:"Trelleborgs kommun",s:"barn",sub:"Familjebehandling och öppenvård",city:"Trelleborg",t:"Unga och deras familjer",kw:"behandlare, socialpedagog",v:0,u:TB,tel:"0410-73 30 00",mail:"kontaktcenter@trelleborg.se"},...TR);
+
+// --- Ystad ---
+const YS="https://www.ystad.se/omsorg-och-stod/",YA=[55.43,13.82];
+add({n:"Vuxenenheten Ystad (socialpsykiatri)",o:"Ystads kommun",s:"lss",sub:"Boendestöd (SoL)",city:"Ystad",t:"Vuxna med psykisk funktionsnedsättning – boendestöd, kontaktperson, sysselsättning",kw:"boendestödjare, stödassistent",u:YS+"stod-vid-funktionsnedsattning/stod-vid-psykisk-funktionsnedsattning",addr:"Lilla Östergatan 26 D, Ystad",tel:"0411-57 73 07"},...YA);
+add({n:"Träffpunkten Ystad",o:"Ystads kommun",s:"lss",sub:"Boendestöd (SoL)",city:"Ystad",t:"Vuxna med psykisk ohälsa – mötesplats och återhämtning",kw:"aktivitetshandledare, stödassistent",u:YS+"stod-vid-funktionsnedsattning/stod-vid-psykisk-funktionsnedsattning",addr:"Stora Norregatan 13, Ystad",tel:"0411-57 70 95"},...YA);
+add({n:"Ungdomens hus Ystad",o:"Ystads kommun",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Ystad",t:"Ungdomar – fritidsverksamhet",kw:"fritidsledare",v:0,u:"https://www.ystad.se/",addr:"Industrigatan 8, Ystad",tel:"0411-57 70 00",mail:"kommunen@ystad.se"},...YA);
+add({n:"Fältgruppen Ystad",o:"Ystads kommun",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Ystad",t:"Uppsökande och förebyggande ungdomsarbete (tobak, alkohol)",kw:"fältsekreterare",v:0,u:YS+"stod-till-familj-barn-och-ungdom/hjalp-till-barn-och-unga",tel:"0411-57 70 00",mail:"kommunen@ystad.se"},...YA);
+add({n:"Mariamottagningen Ystad",o:"Ystads kommun och Region Skåne",s:"barn",sub:"Familjebehandling och öppenvård",city:"Ystad",t:"Unga under 25 år med alkohol- eller drogproblem",kw:"behandlare",v:0,u:YS+"stod-till-familj-barn-och-ungdom/hjalp-till-barn-och-unga",tel:"0411-57 70 00"},...YA);
+add({n:"Kommunala aktivitetsansvaret (KAA) Ystad",o:"Ystads kommun",s:"skola",sub:"Grund- och gymnasieskola",city:"Ystad",t:"Unga 16–20 år som inte studerar på gymnasiet",kw:"elevcoach, samordnare",v:0,u:YS+"stod-till-familj-barn-och-ungdom/hjalp-till-barn-och-unga",tel:"0411-57 70 00"},...YA);
+
+// --- Eslöv ---
+const ES="https://eslov.se/omsorg-stod/",EA=[55.839,13.304];
+add({n:"Familjens hus Tåbelund",o:"Eslövs kommun och Region Skåne",s:"barn",sub:"Familjebehandling och öppenvård",city:"Eslöv",t:"Föräldrar och barn 0–6 år; öppen förskola och föräldrarådgivning",kw:"familjepedagog, socialrådgivare",u:ES+"familj-barn-och-ungdom/familjens-hus-tabelund/",tel:"0413-623 51",mail:"oppenforskola@eslov.se"},...EA);
+add({n:"Aktivitetshuset Eslöv",o:"Eslövs kommun",s:"lss",sub:"Boendestöd (SoL)",city:"Eslöv",t:"Vuxna med långvarig psykisk funktionsnedsättning, utan biståndsbeslut",kw:"aktivitetshandledare, stödassistent",u:ES+"stod-psykisk-ohalsa/aktivitetshus/",addr:"Kvarngatan 49, Eslöv",tel:"0413-620 37"},...EA);
+add({n:"Boendestöd socialpsykiatri Eslöv",o:"Eslövs kommun",s:"lss",sub:"Boendestöd (SoL)",city:"Eslöv",t:"Vuxna med psykisk funktionsnedsättning i eget boende",kw:"boendestödjare",u:ES+"stod-psykisk-ohalsa/boendestod/",tel:"0413-620 00",mail:"kommunen@eslov.se"},...EA);
+add({n:"Daglig verksamhet Eslöv",o:"Eslövs kommun",s:"lss",sub:"Daglig verksamhet",city:"Eslöv",t:"Vuxna 18–67 år med intellektuell funktionsnedsättning, autism eller hjärnskada",kw:"stödpedagog, arbetshandledare",u:ES+"lss-funktionsnedsattning/daglig-verksamhet-arbete-och-sysselsattning/",tel:"0413-620 00",mail:"kommunen@eslov.se"},...EA);
+add({n:"Korttidstillsyn för skolungdom över 12 år, Eslöv",o:"Eslövs kommun",s:"lss",sub:"Korttidsvistelse och LSS för barn",city:"Eslöv",t:"Skolungdomar över 12 år med funktionsnedsättning",kw:"elevassistent, stödassistent, fritidsledare",v:0,u:ES,tel:"0413-620 00",mail:"kommunen@eslov.se"},...EA);
+
+// --- Helsingborg ---
+const HBS="https://helsingborg.se/omsorg-och-stod/";
+add({n:"Fältgruppen i Helsingborg",o:"Helsingborgs stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Helsingborg",t:"Unga 10–21 år och föräldrar; fältarbete vid skolor och fritidsgårdar, rePULSE, MBU",kw:"fältsekreterare, fältassistent",u:HBS+"familj-barn-och-ungdom/barn-och-unga/faltgruppen/",addr:"Terminalgatan 1, 252 78 Helsingborg",tel:"073-231 50 00",mail:"faltgruppen@helsingborg.se"},...HB);
+add({n:"Socialförvaltningens mottagning Helsingborg (barn och unga)",o:"Helsingborgs stad",s:"barn",sub:"Familjebehandling och öppenvård",city:"Helsingborg",t:"Familjer och barn; ingång till bland annat Krimteamet och Ungdomstjänst",kw:"socialsekreterare, familjebehandlare",u:HBS+"familj-barn-och-ungdom/barn-och-unga/",addr:"Bredgatan 17, 251 89 Helsingborg",tel:"042-10 64 56"},...HB);
+add({n:"Navigator (arbetsförberedande daglig verksamhet)",o:"Helsingborgs stad",s:"lss",sub:"Daglig verksamhet",city:"Helsingborg",t:"Vuxna inom LSS som vill ha praktik eller arbete – förberedande verksamhet, företagsgrupp, enskild praktik",kw:"arbetskonsulent, jobbcoach, arbetshandledare",u:HBS+"funktionsnedsattning/stod-enligt-lss/daglig-verksamhet/dagliga-verksamheter-i-helsingborg/",addr:"Drottninggatan 7 vån 6, 252 21 Helsingborg",c:[{r:"Förberedande verksamheten",n:"Ingrid Nilsson",t:"070-831 89 79",m:"ingrid.nilsson2@helsingborg.se"},{r:"Företagsgruppen",n:"Frida Remberg",t:"073-310 63 71",m:"frida.remberg@helsingborg.se"},{r:"Enskild praktik",n:"Paulina Kulle",t:"073-231 53 80",m:"paulina.kulle@helsingborg.se"},{r:"Code_X",n:"Conny Gunnarsson",t:"073-302 70 70",m:"code_x@helsingborg.se"},{r:"Fuzed",n:"Lennie Johansson",t:"070-819 83 01"}]},...HB);
+const HDV=HBS+"funktionsnedsattning/stod-enligt-lss/daglig-verksamhet/dagliga-verksamheter-i-helsingborg/";
+[["Ateljé City","Drottninggatan 7, 252 21 Helsingborg","042-10 79 77","Konst och textil"],["SIA Bibliotek","Bollbrogatan 1, 252 25 Helsingborg","042-10 63 32",""],["Blidögatan 1 (sinnesstimulering)","Blidögatan 5, 257 32 Rydebäck","042-10 22 51","Sinnesstimulering"],["Blidögatan 2 (förvärvad hjärnskada)","Blidögatan 5, 257 32 Rydebäck","042-10 36 78","Personer med förvärvad hjärnskada"],["Bollbrogatan 10","Bollbrogatan 10, 252 25 Helsingborg","042-10 35 18",""],["Brunnbäcksgatan 17 C","Brunnbäcksgatan 17 C, Helsingborg","042-10 23 10","Personer med stort stödbehov"],["Dalhem daglig verksamhet","Dalhemsvägen 71, 254 65 Helsingborg","042-20 10 07",""],["Garnisonen","Lilla Garnisonsgatan 39, 254 67 Helsingborg","042-16 29 13",""],["Husensjövägen 77","Husensjövägen 77, 252 52 Helsingborg","042-10 53 08",""],["Karbinen","Cindersgatan 15, 252 25 Helsingborg","042-10 36 65","Arbetsuppgifter åt lokala företag"],["Kubiken","Hantverkaregatan 25, 252 26 Helsingborg","042-10 53 30","Personer med stort stödbehov"],["Media (daglig verksamhet)","Södergatan 11 B, 252 18 Helsingborg","042-10 66 80","Film, foto, podd"],["Nexus","Södergatan 82–84, 252 37 Helsingborg","042-10 36 69","Personer med högfungerande autism"],["Omtumlaren","Malmögatan 25 C, 252 52 Helsingborg","0708-54 91 52","Sinnesupplevelser"],["Onsdagsgatan 63","Onsdagsgatan 63, 256 63 Helsingborg","042-10 59 12","Individuellt arbete, stort stödbehov"],["Söders café","Nedre Holländaregatan 24, 252 26 Helsingborg","042-10 68 72","Café"],["Trumslagaren","Stattena Centrum 11, 254 44 Helsingborg","042-10 52 23","Sång och musik"],["Västergård","Västergårdsgatan 27, 256 64 Helsingborg","042-10 79 95",""],["Djuramossa","Djuramossavägen 30, 263 65 Viken","042-10 21 39",""],["Dunkerlaget","Kungsgatan 11, 252 21 Helsingborg","042-10 47 88","Dunkers kulturhus"],["Fredriksdal daglig verksamhet","Fredriksdals friluftsmuseum, Helsingborg","042-10 41 47",""],["Hunddagis (daglig verksamhet)","Kummelgatan 324, 253 60 Helsingborg","042-10 23 66",""]].forEach(([n,a,t,x])=>add({n,o:"Helsingborgs stad",s:"lss",sub:"Daglig verksamhet",city:a.includes("Rydebäck")?"Rydebäck (Helsingborg)":a.includes("Viken")?"Viken (Höganäs)":"Helsingborg",t:"Vuxna inom LSS personkrets 1 och 2"+(x?" – "+x.toLowerCase():""),kw:"stödpedagog, aktivitetshandledare, arbetshandledare",u:HDV,addr:a,tel:t},...(a.includes("Rydebäck")?[55.97,12.77]:a.includes("Viken")?[56.14,12.58]:HB)));
+add({n:"Frösunda Aktivitetscentrum Helsingborg",o:"Frösunda Omsorg",s:"lss",sub:"Daglig verksamhet",city:"Helsingborg",t:"Vuxna inom LSS personkrets 1",kw:"stödpedagog, aktivitetshandledare",u:HDV,addr:"Garnisonsgatan 7A, 254 66 Helsingborg",tel:"010-130 37 58",mail:"Aktivitetscentrum.dv@frosunda.se"},...HB);
+add({n:"Blå studion (Nytida)",o:"Nytida AB",s:"lss",sub:"Daglig verksamhet",city:"Helsingborg",t:"Vuxna med högfungerande autism – kreativ studio",kw:"stödpedagog, aktivitetshandledare",u:HDV,addr:"Rönnowsgatan 10B, Helsingborg",tel:"076-345 00 61",c:[{r:"Verksamhetschef",n:"Rickard Sjöstedt",t:"076-621 70 27",m:"rickard.sjostedt@nytida.se"}]},...HB);
+add({n:"Impius daglig verksamhet",o:"Impius Utvecklings AB",s:"lss",sub:"Daglig verksamhet",city:"Helsingborg",t:"Vuxna med neuropsykiatrisk funktionsnedsättning",kw:"stödpedagog, arbetshandledare",u:HDV,addr:"Landskronavägen 1, 252 32 Helsingborg",tel:"042-499 09 28",c:[{r:"Föreståndare daglig verksamhet",n:"Linn Gärtner",t:"042-499 09 20",m:"linn.gartner@impius.se"}]},...HB);
+add({n:"Misa Helsingborg",o:"Misa",s:"lss",sub:"Daglig verksamhet",city:"Helsingborg",t:"Högfungerande autism eller intellektuell funktionsnedsättning som vill ha jobb på vanlig arbetsplats",kw:"jobbcoach, arbetskonsulent",u:HDV,addr:"Drottninggatan 11, 252 21 Helsingborg",mail:"helsingborg@misa.se",c:[{r:"Enhetschef",n:"Patrik Andersson",t:"0707-78 82 05",m:"helsingborg@misa.se"}]},...HB);
+add({n:"Conexi Helsingborg",o:"Conexi",s:"lss",sub:"Daglig verksamhet",city:"Ödåkra (Helsingborg)",t:"Autismspektrum – arbetsförberedande verksamhet tillsammans med IKEA",kw:"jobbcoach, arbetshandledare",u:HDV,addr:"Marknadsvägen 7, 254 69 Ödåkra",tel:"0708-44 49 65",mail:"helsingborg@conexi.se"},56.09,12.75);
+// gruppbostäder och servicebostäder Helsingborg
+const HGB=HBS+"funktionsnedsattning/stod-enligt-lss/boende/boende-for-vuxna/gruppbostader-och-servicebostader/";
+[["Björktrastgatan 8","254 50 Helsingborg","042-10 44 72"],["Björktrastgatan 10","254 50 Helsingborg","042-10 44 71"],["Bruksgatan 42","252 24 Helsingborg","042-10 44 29"],["Dalhemsvägen 82 A","254 63 Helsingborg","042-10 44 24"],["Dalhemsvägen 82 B","254 63 Helsingborg","042-10 44 27"],["Fjällugglegatan 2","254 50 Helsingborg","042-10 43 23"],["Godtemplaregatan 1","260 33 Påarp","042-10 29 21"],["Gräddögatan 1","257 30 Rydebäck","042-10 75 70"],["Gummarpsvägen 10","252 86 Helsingborg","042-10 21 15"],["Kapplandsgatan 15","256 67 Helsingborg","042-10 44 42"],["Kometgatan 49","254 73 Ödåkra","042-10 68 65"],["Magnoliagatan 17","256 68 Helsingborg","042-10 46 57"],["Nils Poppes väg 6","254 76 Allerum","042-10 21 87"],["Sporrevägen 5","252 86 Helsingborg","042-10 21 16"],["Tisdagsgatan 43","256 64 Helsingborg","042-10 21 14"],["Utögatan 3","257 33 Rydebäck","042-10 21 13"]].forEach(([g,pc,t])=>{const town=pc.replace(/^\d{3} \d{2} /,"");const ll={"Påarp":[56.03,12.82],"Rydebäck":[55.97,12.77],"Ödåkra":[56.10,12.75],"Allerum":[56.10,12.82]}[town]||HB;add({n:"Gruppbostad "+g+(town!=="Helsingborg"?" "+town:"")+" (Helsingborg)",o:"Helsingborgs stad",s:"lss",sub:"Grupp- och servicebostäder (LSS)",city:town==="Helsingborg"?"Helsingborg":town+" (Helsingborg)",t:"Vuxna med funktionsnedsättning som behöver mycket tillsyn och omvårdnad, personal dygnet runt",kw:"stödassistent, stödpedagog, boendestödjare",u:HGB,addr:g+", "+pc,tel:t},...ll)});
+[["Bryggaregatan 30","252 27 Helsingborg","042-10 71 78"],["Dalhemsnätet, Dalhemsvägen 29 C","254 65 Helsingborg","042-10 48 36"],["Elinebergsplatsen 4B","256 58 Helsingborg","042-10 77 41"],["Garverigatan 4","252 69 Råå","042-10 42 99"],["Himmelstalundsvägen 14","254 70 Kattarp","042-10 31 34"],["Kantorsgatan 11","254 54 Helsingborg","042-10 39 46"],["Karlsgatan 7","252 24 Helsingborg","042-10 44 41"],["Narcissgatan 31","256 61 Helsingborg","042-10 37 83"],["Närlundanätet, Närlundavägen 16 A","252 75 Helsingborg","042-10 58 60"],["Patronens väg 65 C","254 50 Helsingborg","042-10 21 20"],["Planteringsvägen 36","252 29 Helsingborg","042-10 78 14"],["Rosenbergsgatan 1","254 44 Helsingborg","042-10 21 17"],["Spannmålsgatan 6","254 48 Helsingborg","042-10 34 51"],["Stenkretsgatan 6","254 56 Helsingborg","042-10 37 84"],["Södernätet, Nedre Holländaregatan 26","252 25 Helsingborg","042-10 44 39"]].forEach(([g,pc,t])=>{const town=pc.replace(/^\d{3} \d{2} /,"");const ll={"Råå":[56.01,12.73],"Kattarp":[56.17,12.77]}[town]||HB;add({n:"Servicebostad "+g.split(",")[0]+" (Helsingborg)",o:"Helsingborgs stad",s:"lss",sub:"Grupp- och servicebostäder (LSS)",city:town==="Helsingborg"?"Helsingborg":town+" (Helsingborg)",t:"Vuxna med funktionsnedsättning i egen lägenhet med personal på jour dygnet runt",kw:"stödassistent, boendestödjare",u:HGB,addr:g+", "+pc,tel:t},...ll)});
+add({n:"Tellusgatans boende (LSS barn)",o:"Helsingborgs stad",s:"lss",sub:"Korttidsvistelse och LSS för barn",city:"Ödåkra (Helsingborg)",t:"Barn och unga med svår funktionsnedsättning – bostad med särskild service",kw:"stödassistent, stödpedagog",u:HBS+"funktionsnedsattning/stod-enligt-lss/boende/boende-for-barn-och-ungdomar/",tel:"042-10 50 00",mail:"kontaktcenter@helsingborg.se"},56.10,12.75);
+// skolor Helsingborg
+add({n:"Elinebergsskolan (anpassad grundskola)",o:"Helsingborgs stad",s:"skola",sub:"Anpassad skola",city:"Helsingborg",t:"F–9 och anpassad grundskola med 7 klasser, hörselspår",kw:"elevassistent, resurspedagog, socialpedagog",u:"https://helsingborg.se/kommunala-grundskolor/elinebergsskolan/",addr:"Ramlösavägen 90, 256 56 Helsingborg",c:[{r:"Biträdande rektor anpassad grundskola",n:"Peter Stille",t:"042-10 55 71",m:"peter.stille@helsingborg.se"},{r:"Rektor",n:"Patrik Persson",t:"042-10 55 21",m:"patrik.persson@helsingborg.se"}]},56.02,12.72);
+add({n:"Maria Parkskolan (anpassad grundskola)",o:"Helsingborgs stad",s:"skola",sub:"Anpassad skola",city:"Helsingborg",t:"F–9; anpassad grundskola med cirka 40 elever (Kullavägen 130)",kw:"elevassistent, resurspedagog",u:"https://helsingborg.se/kommunala-grundskolor/maria-parkskolan/",addr:"Västra Allén 3, 254 51 Helsingborg",c:[{r:"Biträdande rektor anpassad grundskola",n:"Andreas Croneld",t:"042-10 53 06",m:"andreas.croneld@helsingborg.se"},{r:"Rektor",n:"Göran Hagberg",t:"073-300 49 03",m:"goran.hagberg@helsingborg.se"}]},56.07,12.70);
+add({n:"Borgmästarskolan (anpassad skola)",o:"Helsingborgs stad",s:"skola",sub:"Anpassad skola",city:"Helsingborg",t:"Anpassad grund- och gymnasieskola, cirka 25 elever med autism och svår intellektuell funktionsnedsättning",kw:"elevassistent, resurspedagog",u:"https://helsingborg.se/kommunala-grundskolor/borgmastarskolan/",addr:"Carl Westmans allé 3, 254 51 Helsingborg",c:[{r:"Biträdande rektor",n:"Nina Lundell",t:"072-974 78 22",m:"nina.lundell@helsingborg.se"},{r:"Rektor",n:"Göran Hagberg",t:"073-300 49 03",m:"goran.hagberg@helsingborg.se"}]},...HB);
+add({n:"Rönnbäcksskolan (anpassad skola)",o:"Helsingborgs stad",s:"skola",sub:"Anpassad skola",city:"Helsingborg",t:"Anpassad grund- och gymnasieskola, cirka 30 elever med flerfunktionsvariation, autism, svår intellektuell funktionsnedsättning",kw:"elevassistent, resurspedagog",u:"https://helsingborg.se/kommunala-grundskolor/ronnbacksskolan/",addr:"Romares väg 14C, Helsingborg",c:[{r:"Biträdande rektor",n:"Nina Lundell",t:"072-974 78 22"},{r:"Rektor",n:"Göran Hagberg",t:"073-300 49 03",m:"goran.hagberg@helsingborg.se"}]},...HB);
+[["Påarps skola",56.03,12.82],["Västra Berga skola",56.02,12.73]].forEach(([n,la,ln])=>add({n:n+" (anpassad grundskola)",o:"Helsingborgs stad",s:"skola",sub:"Anpassad skola",city:"Helsingborg",t:"Grundskola med anpassad grundskola",kw:"elevassistent, resurspedagog",v:0,u:"https://helsingborg.se/kommunala-grundskolor/",tel:"042-10 50 00"},la,ln));
+[["Filbornaskolan","filbornaskolan","Idrottsgymnasium"],["Helsingborgs lärlingsgymnasium","larlingsgymnasium","Lärlingsutbildning"],["Nicolaiskolan","nicolaiskolan",""],["Olympiaskolan","olympiaskolan",""],["Rönnowska skolan","ronnowskaskolan",""],["Tycho Braheskolan","tychobraheskolan",""]].forEach(([n,h,x])=>add({n,o:"Helsingborgs stad",s:"skola",sub:"Grund- och gymnasieskola",city:"Helsingborg",t:"Gymnasieelever"+(x?" – "+x.toLowerCase():"")+"; fråga efter introduktionsprogrammen och elevhälsan",kw:"elevcoach, socialpedagog, elevassistent",v:0,u:`https://${h}.helsingborg.se`,tel:"042-10 50 00"},...HB));
+// fritidsgårdar Helsingborg
+const UF="https://helsingborg.se/uppleva-och-gora/ung-fritid/";
+[["Bårslövs fritidsgård","barslov-fritidsgard/",56.08,12.83],["Dalhems fritidsgård Ladan","dalhem-fritidsgard/",56.06,12.73],["Fritid i byn (Påarp och Mörarp)","fritidibyn/",56.03,12.82],["Maria Park fritidsgård Stället","maria-park-fritidsgard/",56.07,12.70],["Block 15 Närlunda fritidsgård","block-15/",56.05,12.72],["Rydebäcks fritidsgård","rydebacks-fritidsgard/",55.97,12.77],["Viktoriahusets fritidsgård","viktoriahuset/",56.04,12.71],["Ödåkra fritidsgård","odakra-fritidsgard/",56.10,12.75],["Mötesplats Kalifornia","motesplats-kalifornia/",56.03,12.70],["Mötesplats Skaran","motesplats-skaragatan-1/",56.05,12.70],["Ung HBTQ/HBG (13–25 år)","ung-hbtq-hbg/",...HB],["Zonen Teknikhallen (13–25 år)","zonen/",...HB],["Fuzed e-sport","fuzed/",...HB],["Motormeck","motormeck/",...HB]].forEach(([n,sl,la,ln])=>add({n:n+" (Helsingborg)",o:"Helsingborgs stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Helsingborg",t:"Barn och unga på fritiden",kw:"fritidsledare, ungdomsledare",u:UF+sl,tel:"042-10 50 00",mail:"kontaktcenter@helsingborg.se"},la,ln));
+add({n:"Aktivitetshuset Tryckeriet (Helsingborg)",o:"Helsingborgs stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Helsingborg",t:"Unga – aktivitetshus",kw:"fritidsledare",u:"https://helsingborg.se/uppleva-och-gora/aktivitetshuset-tryckeriet/",mail:"aktivitetshuset.tryckeriet@helsingborg.se",tel:"042-10 50 00"},...HB);
+add({n:"Aktivitetshuset Jutan (Helsingborg)",o:"Helsingborgs stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Helsingborg",t:"Unga – aktivitetshus",kw:"fritidsledare",u:"https://helsingborg.se/uppleva-och-gora/aktivitetshuset-jutan/",tel:"042-10 50 00"},...HB);
+
+// --- Resursskolor och anpassad grundskola Malmö ---
+const MRS="https://malmo.se/Bo-och-leva/Utbildning-och-forskola/Grundskola/Resursskolor-for-elever-i-behov-av-omfattande-sarskilt-stod.html";
+[["Resursskolan Stenkulaskolan Linden","åk 1–9, samlokaliserad"],["Resursskolan Rådmansvångens skola Källängen","åk 4–9, samlokaliserad"],["Resursskolan Limhamnsskolan Sjöstaden","åk 7–9, samlokaliserad"],["Resursskolan Alléskolan Vintrie","åk 7–9, samlokaliserad"],["Katrinelundsskolan (resursskola)","åk 1–9, fristående resursskola i egen byggnad"]].forEach(([n,x])=>add({n,o:"Malmö stad",s:"skola",sub:"Resursskola och särskild undervisningsgrupp",city:"Malmö",t:"Elever i behov av omfattande och varaktigt särskilt stöd – "+x,kw:"resurspedagog, socialpedagog, elevassistent",u:MRS,tel:"040-34 10 00",mail:"malmostad@malmo.se",note:"Kontaktuppgifter till rektor står på respektive skolas sida på malmo.se."},...MA));
+const MAG="https://malmo.se/Bo-och-leva/Utbildning-och-forskola/Grundskola/Anpassad-grundskola/Anpassade-grundskolor-A-O.html";
+add({n:"Sockerbruksskolan (anpassad grundskola, resursskola)",o:"Malmö stad",s:"skola",sub:"Resursskola och särskild undervisningsgrupp",city:"Malmö",t:"Åk 1–9, resursskola för inriktningen ämnesområden inom anpassad grundskola",kw:"elevassistent, resurspedagog",u:"https://malmo.se/Bo-och-leva/Utbildning-och-forskola/Grundskola/Anpassad-grundskola/Sockerbruksskolan.html",addr:"Byåkersvägen 35, Malmö",tel:"040-34 10 00"},55.555,13.02);
+[["Bergaskolan","Hyllie Kyrkoväg 63","7–9",55.57,12.98],["Dammfriskolan","Dammfrigången 9","7–9",55.585,13.02],["Hermodsdalsskolan","Eriksfältsgatan 99","1–9",55.57,13.03],["Holmaskolan","Hyacintgatan 49","1–6",55.575,12.985],["Kroksbäcksskolan","Hyllievångsvägen 6","1–9",55.57,12.99],["Lindängeskolan","Munkhättegatan 151","1–9",55.565,13.02],["Lorensborgsskolan","Hallingsgatan 1","1–6",55.59,12.975],["Mellanhedsskolan","Gyllebogången 1","1–9",55.585,12.99],["Mellersta Förstadsskolan","Föreningsgatan 42","7–9",55.597,13.005],["Munkhätteskolan","Munkhättegatan 5","1–9",55.575,13.02],["Oxievångsskolan","Keramikvägen 122","1–6",55.545,13.10],["Rosengårdsskolan","Von Rosens väg 43","1–6",55.585,13.045],["Tygelsjöskolan","Tygelsjö skolväg 11","1–6",55.515,13.00],["Videdalsskolan","Videdalsvägen 15","4–9",55.58,13.08],["Ängslättskolan","Klagshamnsvägen 50","1–6",55.555,12.94],["Örtagårdsskolan","Hårds väg 113","1–9",55.59,13.03]].forEach(([n,a,g,la,ln])=>add({n:n+" (anpassad grundskola)",o:"Malmö stad",s:"skola",sub:"Anpassad skola",city:"Malmö",t:"Anpassad grundskola åk "+g+" – elever med intellektuell funktionsnedsättning",kw:"elevassistent, resurspedagog",u:MAG,addr:a+", Malmö",tel:"040-34 10 00"},la,ln));
+add({n:"Move and Walk (fristående anpassad grundskola)",o:"Move and Walk",s:"skola",sub:"Anpassad skola",city:"Malmö",t:"Åk 1–9, fristående anpassad grundskola (rörelsehinder, konduktiv pedagogik)",kw:"elevassistent, resurspedagog",u:"https://movewalk.se/",addr:"Stadiongatan 25 E, 217 62 Malmö"},55.585,12.985);
+// Lund
+const LAG="https://www.lund.se/forskola-och-skola/anpassad-skola/anpassad-grundskola";
+[["Fågelskolan","Lund (Papegojelyckan)","1–9",55.72,13.20],["Fåglasång","Södra Sandby","1–9",55.72,13.35],["Backsippan (Hagalundskolan)","Dalby","1–6",55.665,13.35],["Nyvångskolan","Dalby (Nyvång)","4–9",55.67,13.34],["Stenröseskolan","Lund (Gunnesbo)","1–9",55.725,13.16],["Tunaskolan","Lund (Tuna)","1–9",55.705,13.205],["Vegalyckan","Lund (Stampelyckan)","1–3",55.715,13.17]].forEach(([n,c,g,la,ln])=>add({n:n+" (anpassad grundskola)",o:"Lunds kommun",s:"skola",sub:"Anpassad skola",city:c,t:"Anpassad grundskola åk "+g,kw:"elevassistent, resurspedagog",u:LAG,tel:"046-359 50 00",mail:"barnochskola@lund.se",note:"Rektor och adress står på skolans egen sida under lund.se/forskola-och-skola/grundskola/grundskolor-i-lund."},la,ln));
+add({n:"Lunds resursskola (förskoleklass, Fågelskolan/Nyvångskolan)",o:"Lunds kommun",s:"skola",sub:"Resursskola och särskild undervisningsgrupp",city:"Lund",t:"Från hösten 2026: förskoleklass för elever med medelsvår till svår intellektuell funktionsnedsättning",kw:"resurspedagog, elevassistent",u:LAG,tel:"046-359 50 00",mail:"barnochskola@lund.se",c:[{r:"Samordnare",n:"Lotta Wemmert Lundin",m:"lotta.wemmertlundin@lund.se"}]},...LU);
+add({n:"Pusselbitens skola (Nytida)",o:"Nytida",s:"skola",sub:"Resursskola och särskild undervisningsgrupp",city:"Dalby (Lund)",t:"Fristående grundskola åk 1–6 för elever med NPF",kw:"resurspedagog, elevassistent, socialpedagog",v:0,u:"https://www.nytida.se",note:"Länkad från lund.se under fristående skolor."},55.665,13.35);
+
+// --- LSS privata (LSSGuiden) ---
+const LG="https://www.lssguiden.se/";
+const lss=(n,o,sub,city,t,u,addr,tel,mail,c,src,la,ln,v=1)=>add({n,o,s:"lss",sub,city,t,kw:"stödpedagog, stödassistent, boendestödjare",u,addr,tel,mail,c,src:src?LG+src:undefined,v},la,ln);
+const NN=[{r:"Föreståndare",n:"Nina Nilsson",t:"072-996 36 51",m:"nina.nilsson@unika.se"}],RJ=[{r:"Föreståndare",n:"Roger Johansson",t:"070-872 96 59",m:"roger.johansson@unika.se"}];
+const GB="Grupp- och servicebostäder (LSS)",DV="Daglig verksamhet",KB="Korttidsvistelse och LSS för barn";
+lss("Unika Vallkärra","Unika LSS Omsorg",GB,"Vallkärra (Lund)","Vuxna personkrets 1, serviceboende 8 lägenheter","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/gruppbostad/vallkarra/","Vallkärra, 225 91 Lund",undefined,"nina.nilsson@unika.se",NN,"lss-9-9p/skane-lan/lund/unika-vallkarra/12768",55.73,13.18);
+lss("Höje Hund och Park",undefined,DV,"Lund","Personkrets 1, kvinnor och män",LG+"lss-9-10p/skane-lan/lund/hoje-hund-och-park/8705","222 70 Lund",undefined,undefined,undefined,"lss-9-10p/skane-lan/lund/hoje-hund-och-park/8705",...LU,0);
+lss("Kulturcentrum Skåne",undefined,DV,"Lund","Vuxna och äldre med intellektuell funktionsnedsättning",G("Kulturcentrum Skåne daglig verksamhet Lund"),"Box 1237, 221 05 Lund",undefined,undefined,undefined,"lss-9-10p/skane-lan/lund/kulturcentrum-skane/8128",...LU,0);
+lss("Misa Lund",undefined,DV,"Lund","Vuxna 18–64 med autism, intellektuell eller psykisk funktionsnedsättning",G("Misa Lund daglig verksamhet"),"221 22 Lund",undefined,undefined,undefined,"lss-9-10p/skane-lan/lund/misa-skane/8228",...LU,0);
+lss("Unika Ingenjörsgatan (daglig verksamhet)","Unika LSS Omsorg",DV,"Helsingborg","Vuxna med autism och intellektuell funktionsnedsättning – skapande, snickeri, TEACCH","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/daglig-verksamhet/ingenjorsgatan/","Ingenjörsgatan 1, 252 27 Helsingborg",undefined,"roger.johansson@unika.se",RJ,"lss-9-10p/skane-lan/helsingborg/unika-ingenjorsgatan-dv/12757",...HB);
+lss("Zenit daglig verksamhet",undefined,DV,"Helsingborg","Vuxna och äldre",G("Zenit daglig verksamhet Helsingborg"),"254 44 Helsingborg",undefined,undefined,undefined,"lss-9-10p/skane-lan/helningborg/zenit-daglig-verksamhet/8610",...HB,0);
+lss("Sweid Care","Sweid Care",GB,"Hasslarp (Helsingborg)","Vuxna med intellektuell funktionsvariation och autism, 5 lägenheter","http://www.sweidcare.se","Västkustvägen 31, 260 39 Hasslarp","0762-39 11 95","stella@sweidcare.se",[{r:"Föreståndare",n:"Stella Nylén",t:"0762-39 11 95",m:"stella@sweidcare.se"}],"lss-9-9p/skane-lan/hasslarp/sweid-care/12795",56.13,12.80);
+lss("Unika Rallaregatan","Unika LSS Omsorg",GB,"Kattarp (Helsingborg)","Vuxna med autism och psykiatrisk tilläggsdiagnos, 6 lägenheter","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/gruppbostad/rallaregatan/","Rallaregatan 61, 260 38 Kattarp",undefined,"roger.johansson@unika.se",RJ,"lss-9-9p/skane-lan/kattarp/unika-rallaregatan/12755",56.17,12.77);
+lss("Unika Rökaholms gård","Unika LSS Omsorg",GB,"Svalöv","Vuxna med Prader-Willis syndrom, serviceboende 8 lägenheter","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/serviceboende/rokaholms-gard/","Trolleholm 1766, 268 90 Svalöv",undefined,"nina.nilsson@unika.se",NN,"lss-9-9p/skane-lan/svalov/unika-rokaholms-gard/12766",55.95,13.20);
+lss("Humana Violgatan gruppboende","Humana",GB,"Höör","Vuxna 18+ personkrets 3: autism, intellektuell/psykisk funktionsnedsättning, psykos, samsjuklighet. 6 platser","https://www.humana.se/violgatan","Violgatan 9, 243 32 Höör","073-818 98 40","placering.vuxen@humana.se",[{r:"Föreståndare",n:"Annette Nilsson",t:"070-274 59 12"}],"lss-9-9p/skane-lan/hoor/humana-violgatan-gruppboende/12479",55.937,13.54);
+lss("Unika Södra Munkarp","Unika LSS Omsorg",GB,"Hörby","Vuxna och äldre, gruppbostad 6 lägenheter","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/gruppbostad/sodra-munkarp/","Södra Munkarp 326, 243 95 Höör","0413-343 07","nina.nilsson@unika.se",NN,"lss-9-9p/skane-lan/hoor/unika-sodra-munkarp-326/8508",55.89,13.60);
+[["Fogdaröd – Cypressen gruppboende","fogdarod-gruppbostaden-cypressen/7975"],["Fogdaröd – Möllebacken","fogdarods-lss-verksamhet-mollebacken/7878"],["Fogdaröd – Sandstenen","fogdarod-sandstenen/8375"]].forEach(([n,sl])=>lss(n,"Fogdaröd",GB,"Höör","Vuxna med intellektuell funktionsnedsättning, autism, dubbeldiagnos med psykisk funktionsnedsättning",G(n+" Höör"),"Norra Fogdarödsvägen 8, 243 93 Höör",undefined,undefined,undefined,"lss-9-9p/skane-lan/hoor/"+sl,55.94,13.55,0));
+lss("Samskapa LSS-boende (Tollarp)","Samskapa Behandling AB",KB,"Tollarp (Kristianstad)","Barn och unga 12–20 år (23 om gymnasiet) med kognitiva variationer, autism, psykiatrisk tilläggsdiagnos. 2 platser","https://samskapa.com/lss-boende/","Storgatan 4, 242 31 Hörby (kontor)","070-960 96 56","daniel.oja@samskapa.com",[{r:"Tf föreståndare",n:"Daniel Oja",t:"0708-80 08 52",m:"daniel.oja@samskapa.com"},{r:"Placeringsansvarig",n:"Mathias Johnson",t:"0709-60 96 56",m:"mathias.johnson@samskapa.com"}],"lss-9-8p/skane-lan/horby/samskapa-behandling/12379",55.93,13.99);
+lss("Skogslunden LSS Tyringe","Marielund Omsorg",KB,"Västra Torup (Hässleholm)","Barn, unga och vuxna med autism och intellektuell funktionsnedsättning, 1–1-bemanning, 4 platser","https://www.marielundomsorg.se/","Bommeryd 3369C, Västra Torup","076-560 93 44","bane.berbatovci@marielundomsorg.se",[{r:"Föreståndare",n:"Bane Berbatovci",t:"076-560 93 44",m:"bane.berbatovci@marielundomsorg.se"},{r:"Placeringsansvarig",n:"Emma",t:"076-149 59 16"}],"lss-9-8p/skane-lan/vastra-torup/skogslunden-lss-tyringe/12604",56.15,13.55);
+lss("Den Goda Viljan – Lärkan LSS-barnboende","Den Goda Viljan",KB,"Lövestad (Sjöbo)","Barn 11–17 år med NPF och/eller lindrig/måttlig utvecklingsstörning, utmanande beteende","http://www.dengodaviljan.se","Lärkvingegränd 1, 275 75 Lövestad","073-366 46 78","josefin.nilsson@dengodaviljan.se",[{r:"Föreståndare",n:"Josefin Nilsson",t:"073-366 46 78",m:"josefin.nilsson@dengodaviljan.se"}],"lss-9-8p/skane-lan/lovestad/den-goda-viljan/12902",55.65,13.89);
+lss("Viljabogruppen",undefined,GB,"Skåne","Vuxna med autism, Asperger, ADD, OCD",G("Viljabogruppen LSS Skåne"),undefined,undefined,undefined,undefined,"lss-9-9p/skane-lan/viljabogruppen/12443",55.85,13.45,0);
+lss("Medvind daglig verksamhet",undefined,DV,"Glimåkra (Östra Göinge)","Vuxna med utvecklingsstörning – praktik och arbete i nordöstra Skåne",G("Medvind daglig verksamhet Glimåkra"),"280 64 Glimåkra",undefined,undefined,undefined,"lss-9-10p/skane-lan/glimakra/medvind/8222",56.30,14.13,0);
+const EK=[56.16,13.60],hum=(n,sub,t,url,addr,tel,c,src,ll)=>lss(n,"Humana (Ekeliden-stiftelsen)",sub,"Tyringe (Hässleholm)",t,url,addr,tel,"placering.vuxen@humana.se",c,src,...(ll||EK));
+const JM=[{r:"Föreståndare",n:"Jonna Melin",t:"070-813 83 37"}],RK=[{r:"Föreståndare",n:"Rebecca Karlsson",t:"076-983 46 84"}],PW=[{r:"Föreståndare",n:"Patrik Wilhelmsson",t:"070-271 72 45"}];
+hum("Humana Ekeliden Annexet",GB,"Vuxna 18+ med psykisk funktionsnedsättning och autism, 4 platser","http://www.humana.se/ekeliden-annexet","P A Perssons gata 6, 282 31 Tyringe","0451-599 99",JM,"lss-9-9p/skane-lan/tyringe/humana-ekeliden-annexet-gruppboende/7725");
+hum("Humana Ekeliden Chuckvägen",GB,"Vuxna 18+ personkrets 1: autism, intellektuell/psykisk funktionsnedsättning, psykos. 5 lägenheter","http://www.humana.se/ekeliden-chuckvagen","Chuckvägen 8, 282 31 Tyringe","0451-502 23",RK,"lss-9-9p/skane-lan/tyringe/humana-ekeliden-chuckvagen-gruppboende/7804");
+hum("Humana Ekeliden daglig verksamhet och Snoezelen",DV,"Vuxna 18+ personkrets 1 och 2 – snoezelrum, skaparverkstad, kör, bakning. 23 platser","https://www.humana.se/ekeliden-daglig-verksamhet","Nils Anderssons gata 5, 282 31 Tyringe","0451-599 93",JM,"lss-9-10p/skane-lan/tyringe/humana-ekeliden-daglig-verksamhet-och-snouezel/7847");
+hum("Humana Ekeliden Skogsvillan",GB,"Vuxna 18+ med autism, intellektuell/psykisk funktionsnedsättning, utmanande beteende. 5 platser","http://www.humana.se/ekeliden-skogsvillan","Terapivägen 3, 282 31 Tyringe","0721-51 46 12",JM,"lss-9-9p/skane-lan/tyringe/humana-ekeliden-skogsvillan-gruppboende/12459");
+hum("Humana Ekeliden Villa Englund",GB,"Vuxna 18+ med förvärvad hjärnskada (personkrets 2). 4 lägenheter","http://www.humana.se/ekeliden-villa-englund","Nils Anderssons gata 5, 282 31 Tyringe","0451-599 90",PW,"lss-9-9p/skane-lan/tyringe/humana-ekeliden-villa-englund-gruppboende/7850");
+hum("Humana Ekeliden Villa Åslund",GB,"Vuxna 18+ med förvärvad hjärnskada, fysisk funktionsnedsättning, utmanande beteende. 4 lägenheter","http://www.humana.se/ekeliden-villa-aslund","Nils Anderssons gata 4, 282 31 Tyringe","0451-599 98",RK,"lss-9-9p/skane-lan/tyringe/humana-ekeliden-villa-aslund-gruppboende/7849");
+hum("Humana Kollinge gruppboende",GB,"Vuxna 18+ med autism, intellektuell/psykisk funktionsnedsättning. 6 lägenheter","http://www.humana.se/kollinge","Bokgatan 2, 282 31 Tyringe","0451-510 50",RK,"lss-9-9p/skane-lan/tyringe/humana-kollinge-gruppboende/8299");
+hum("Humana Villa Torsjö",GB,"Vuxna 18+ med intellektuell funktionsnedsättning och autism; ADL, Snoezelen, AKK. 6 lägenheter","http://www.humana.se/villa-torsjo","Torsjö 2871, 282 31 Tyringe","076-135 27 74",PW,"lss-9-9p/skane-lan/tyringe/humana-villa-torsjo-gruppboende/12012");
+lss("Humana Verkstadsgatans daglig verksamhet","Humana",DV,"Ängelholm","Vuxna och äldre personkrets 1 och 2, autism, intellektuell funktionsnedsättning. 18 platser","https://www.humana.se/individ-och-familj/sok-verksamhet/lss/verkstadsgatans-dagliga-verksamhet","Verkstadsgatan 4, 262 71 Ängelholm",undefined,"anette.borup@humana.se",[{r:"Föreståndare",n:"Anette Borup",t:"073-065 84 76",m:"anette.borup@humana.se"}],"lss-9-10p/skane-lan/humana-verkstadsgatans-dagliga-verksamhet/12599",56.243,12.862);
+lss("Humana Gamla vägen gruppboende","Humana",GB,"Åstorp","Personkrets 1: autism, intellektuell/psykisk funktionsnedsättning, psykos, skadligt bruk. 6 lägenheter. Personalen är bland annat socialpedagoger","http://www.humana.se/gamla-vagen","Gamla vägen 14, 265 39 Åstorp","010-458 61 64","placering.vuxen@humana.se",[{r:"Föreståndare",n:"Josephine Wigårde",t:"073-088 54 79"}],"lss-9-9p/skane-lan/astorp/humana-gamla-vagen-gruppboende/12425",56.13,12.94);
+lss("Humana Kvidinge gruppboende","Humana",GB,"Kvidinge (Åstorp)","Vuxna 18+ med autism, psykisk funktionsnedsättning, psykos. 6 lägenheter","http://www.humana.se/kvidinge","Söderåsvägen 65, 265 71 Kvidinge","073-053 23 69","placering.vuxen@humana.se",[{r:"Föreståndare",n:"Malin Hansson",t:"070-342 30 12"}],"lss-9-9p/skane-lan/kvidinge/humana-kvidinge-gruppboende/12317",56.13,13.04);
+lss("Humana Trollebergsvägen gruppboende","Humana",GB,"Staffanstorp","Vuxna 18+ med autism, intellektuell/psykisk funktionsnedsättning, utmanande beteende. 6 lägenheter","https://www.humana.se/trollebergsvagen","Trollebergsvägen 102, 245 61 Staffanstorp","072-595 78 05","placering.vuxen@humana.se",[{r:"Föreståndare",n:"Annette Nilsson",t:"073-525 90 03"}],"lss-9-9p/skane-lan/staffanstorp/humana-trollebergsvagen-gruppboende/12485",55.65,13.19);
+lss("Friggatofta gård (korttidshem)",undefined,KB,"Broby (Östra Göinge)","Barn och unga personkrets 1 – korttidsvistelse",G("Friggatofta gård Broby"),"280 60 Broby",undefined,undefined,undefined,"lss-9-6p/skane-lan/broby/friggatofta-gard/7893",56.25,14.08,0);
+lss("Furuboda (korttidsvistelse)","Furuboda",KB,"Åhus (Kristianstad)","Barn och unga med funktionsnedsättning, personkrets 1 och 2",G("Furuboda Åhus kontakt"),"296 86 Åhus",undefined,undefined,undefined,"lss-9-6p/skane-lan/ahus/furuboda/7924",55.92,14.29,0);
+lss("Unika Kullebo","Unika LSS Omsorg",GB,"Stehag (Eslöv)","Vuxna med Prader-Willis syndrom, serviceboende 7 lägenheter","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/serviceboende/karrstorpsvagen-31/","Kärrtorpsvägen 31, 241 74 Stehag","0733-16 50 13","nina.nilsson@unika.se",NN,"lss-9-9p/skane-lan/stehag/unika-kullebo/12756",55.90,13.39);
+lss("Unika Arwidius väg","Unika LSS Omsorg",GB,"Arlöv (Burlöv)","Vuxna och äldre med intellektuell funktionsnedsättning och autism, arabisktalande. 6 platser","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/gruppbostad/arwidius-vag/","Arwidius väg 62B, 232 91 Arlöv",undefined,"sheri.sylejmani@unika.se",[{r:"Föreståndare",n:"Sheri Sylejmani",t:"070-876 48 23",m:"sheri.sylejmani@unika.se"}],"lss-9-9p/skane-lan/arlov/unika-arwidius-vag/12406",55.64,13.08);
+lss("Unika Pumpmakaregatan","Unika LSS Omsorg",GB,"Örkelljunga","Vuxna med lindrig intellektuell funktionsnedsättning/autism, psykisk ohälsa, eventuellt missbruk. 8 lägenheter","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/serviceboende/pumpmakaregatan/","Pumpmakaregatan 5, Örkelljunga",undefined,"agneta.rosen@unika.se",[{r:"Föreståndare",n:"Agneta Rosén",t:"072-181 28 41",m:"agneta.rosen@unika.se"}],"lss-9-9p/skane-lan/orkelljunga/unika-pumpmakaregatan/8753",56.28,13.28);
+lss("Unika Lupingatan","Unika LSS Omsorg",GB,"Höganäs","Vuxna med autism, intellektuell funktionsnedsättning, psykiatrisk tilläggsdiagnos. 6 platser","https://www.unika.se/funktionsnedsattning/hitta-verksamhet/gruppbostad/lupingatan/","Lupingatan 1, Höganäs",undefined,"roger.johansson@unika.se",RJ,"lss-9-9p/skane-lan/hoganas/unika-lupingatan/12405",56.20,12.56);
+lss("Sjöstorpsgården",undefined,GB,"Dalby (Lund)","Vuxna med autism",G("Sjöstorpsgården Dalby"),"Sjöstorp, 247 94 Dalby",undefined,undefined,undefined,"lss-9-9p/skane-lan/dalby/sjostorpsgarden/8405",55.68,13.30,0);
+lss("Vinslövshemmet",undefined,GB,"Vinslöv (Hässleholm)","Män och kvinnor från 35 år med psykisk funktionsnedsättning, psykossjukdom (personkrets 3)",G("Vinslövshemmet"),"Box 126, 288 22 Vinslöv",undefined,undefined,undefined,"lss-9-9p/skane-lan/vinslov/vinslovshemmet/8594",56.10,13.92,0);
+lss("SKOA Solängens karriär- och arbetscentrum",undefined,KB,"Simrishamn","Unga vuxna 18+ med Aspergers syndrom och högfungerande autism",G("SKOA Solängen Simrishamn"),"272 31 Simrishamn",undefined,undefined,undefined,"lss-9-6p/skane-lan/simrishamn/skoa-solangens-karriar-och-arbetscentrum/8679",55.56,14.35,0);
+lss("Holmsgårdens Omsorg",undefined,KB,"Klippan","Korttidsvistelse enligt LSS",G("Holmsgårdens Omsorg Klippan"),"264 91 Klippan",undefined,undefined,undefined,"lss-9-6p/skane-lan/klippan/holmsgardens-omsorg-ab/11906",56.13,13.13,0);
+lss("NeuroOptima",undefined,KB,"Svedala","Personkrets 2 – stroke eller annan traumatisk hjärnskada",G("NeuroOptima Svedala"),"233 35 Svedala",undefined,undefined,undefined,"lss-9-6p/skane-lan/svedala/neurooptima/10924",55.51,13.24,0);
+lss("Nämndemansgården Prokrami dagverksamhet","Nämndemansgården",DV,"Stehag (Eslöv)","Vuxna med skadligt bruk/beroende",G("Nämndemansgården Prokrami Stehag"),"241 36 Stehag",undefined,undefined,undefined,"lss-9-10p/skane-lan/stehag/namndemansgarden-prokrami-dagverksamhet/9641",55.90,13.39,0);
+
+// --- Region Skåne habilitering (kontaktuppgifter ej hämtade: skane.se blockerar automatiska anrop) ---
+[["Barn- och ungdomshabiliteringen Malmö","Malmö",...MA,"Barn och unga 0–20 år med funktionsnedsättning och deras familjer"],["Vuxenhabiliteringen Malmö","Malmö",55.59,13.01,"Vuxna med intellektuell funktionsnedsättning, autism, CP eller förvärvad hjärnskada"],["Barn- och ungdomshabiliteringen Lund","Lund",...LU,"Barn och unga 0–20 år med funktionsnedsättning och deras familjer"],["Vuxenhabiliteringen Lund","Lund",55.71,13.20,"Vuxna med intellektuell funktionsnedsättning, autism, CP eller förvärvad hjärnskada"],["Barn- och ungdomshabiliteringen Helsingborg","Helsingborg",...HB,"Barn och unga 0–20 år med funktionsnedsättning och deras familjer"],["Vuxenhabiliteringen Helsingborg","Helsingborg",56.04,12.70,"Vuxna med intellektuell funktionsnedsättning, autism, CP eller förvärvad hjärnskada"],["Barn- och ungdomshabiliteringen Kristianstad","Kristianstad",...KR,"Barn och unga 0–20 år med funktionsnedsättning och deras familjer"],["Vuxenhabiliteringen Kristianstad","Kristianstad",56.035,14.15,"Vuxna med intellektuell funktionsnedsättning, autism, CP eller förvärvad hjärnskada"]].forEach(([n,c,la,ln,t])=>add({n,o:"Region Skåne",s:"psyk",sub:"Habilitering",city:c,t,kw:"habiliteringsassistent, kurator, behandlingsassistent, stödpedagog",v:0,u:G(n+" 1177"),tel:"044-309 30 00",note:"Region Skånes växel. Be om habiliteringen i "+c+" och fråga efter enhetschefen. Exakt adress och direktnummer finns på 1177.se (sök \"habilitering\")."},la,ln));
+
+// --- Idéburna ---
+add({n:"Svenska kyrkan Malmö – diakoni och samtalsstöd",o:"Svenska kyrkan Malmö",s:"ngo",sub:"Kyrkans sociala arbete",city:"Malmö",t:"Alla åldrar: stödsamtal, hembesök, sorggrupper för barn, unga och vuxna, diakonal ekonomisk mottagning, gymnasieteam",kw:"diakon, socialarbetare, volontärsamordnare",u:"https://www.svenskakyrkan.se/malmo/fa-stod",addr:"Fiskehamnspromenaden 3, 211 18 Malmö",tel:"040-27 90 00",mail:"svenskakyrkan.malmo@svenskakyrkan.se",c:[{r:"Kyrkoherde",n:"Gunilla Hallonsten"}]},55.61,12.99);
+add({n:"Svenska kyrkan Malmö – mötesplatser",o:"Svenska kyrkan Malmö",s:"ngo",sub:"Kyrkans sociala arbete",city:"Malmö",t:"Öppna mötesplatser för alla åldrar: sopplunch, kafé, babykafé",kw:"diakon, fritidsledare",u:"https://www.svenskakyrkan.se/malmo/fa-stod/motesplatser",tel:"040-27 90 00"},...MA);
+add({n:"The Room – Svenska kyrkans mötesplats Hyllie",o:"Svenska kyrkan Malmö",s:"ngo",sub:"Kyrkans sociala arbete",city:"Malmö (Hyllie)",t:"Öppen mötesplats med fika och aktiviteter",kw:"fritidsledare, volontärsamordnare",v:0,u:"https://www.svenskakyrkan.se/malmo",tel:"040-27 90 00"},55.565,12.975);
+add({n:"Svenska kyrkan Lund – diakonicentralen",o:"Svenska kyrkan i Lund",s:"ngo",sub:"Kyrkans sociala arbete",city:"Lund",t:"Diakoni, mötesplatser (Kaffe med koll), öppen grupp Nycklar för unga från 12 år, familjegrupper",kw:"diakon, fritidsledare, socialarbetare",u:"https://www.svenskakyrkan.se/lund",addr:"Lilla Kyrkogatan 2, 223 50 Lund",tel:"046-718 700",mail:"lundspastorat@svenskakyrkan.se",c:[{r:"Domprost",n:"Niclas Blåder"}]},...LU);
+add({n:"Svenska kyrkans familjerådgivning Lund",o:"Svenska kyrkan",s:"ngo",sub:"Kyrkans sociala arbete",city:"Lund",t:"Par och familjer med relationsproblem",kw:"familjerådgivare, kurator",u:"https://www.svenskakyrkan.se/malmo/fa-stod",tel:"046-71 88 90",mail:"lund.familjeradgivning@svenskakyrkan.se"},...LU);
+add({n:"Malmö Barn- och Kvinnojour",o:"Malmö Barn- och Kvinnojour",s:"ngo",sub:"Jourer och stödlinjer",city:"Malmö",t:"Kvinnor och barn utsatta för våld: samtal, grupper, mötesplats, skyddat boende (IVO-tillstånd)",kw:"jourkvinna, stödsamtalare, socialarbetare",u:"https://malmobarnochkvinnojour.se/",tel:"040-30 11 13"},...MA);
+add({n:"Lunds kvinnojour",o:"Lunds kvinnojour",s:"ngo",sub:"Jourer och stödlinjer",city:"Lund",t:"Kvinnor och barn utsatta för våld",kw:"jourkvinna, stödsamtalare",v:0,u:G("Lunds kvinnojour kontakt")},...LU);
+add({n:"Kvinnojouren Helsingborg",o:"Kvinnojouren Helsingborg",s:"ngo",sub:"Jourer och stödlinjer",city:"Helsingborg",t:"Kvinnor och barn utsatta för våld",kw:"jourkvinna, stödsamtalare",v:0,u:G("Kvinnojouren Helsingborg kontakt")},...HB);
+add({n:"Tjejjouren Lund",o:"Tjejjouren",s:"ngo",sub:"Jourer och stödlinjer",city:"Lund",t:"Tjejer och unga transpersoner 12–25 år – chatt, mejl, samtalsgrupper",kw:"stödsamtalare, volontärsamordnare",v:0,u:G("Tjejjouren Lund")},...LU);
+add({n:"Tjejjouren Malmö",o:"Tjejjouren",s:"ngo",sub:"Jourer och stödlinjer",city:"Malmö",t:"Tjejer och unga transpersoner 12–25 år",kw:"stödsamtalare, volontärsamordnare",v:0,u:G("Tjejjouren Malmö")},...MA);
+add({n:"Terrafem Malmö",o:"Terrafem",s:"ngo",sub:"Jourer och stödlinjer",city:"Malmö",t:"Kvinnor med utländsk bakgrund utsatta för våld – stödlinje på många språk, skyddat boende",kw:"stödsamtalare, socialarbetare",v:0,u:G("Terrafem Malmö kontakt")},...MA);
+add({n:"BRIS Region Syd",o:"BRIS",s:"ngo",sub:"Jourer och stödlinjer",city:"Malmö",t:"Barn och unga under 18 år – kuratorsstöd, gruppstöd och stödlinje 116 111",kw:"kurator, volontärsamordnare",v:0,u:"https://www.bris.se",tel:"116 111",note:"116 111 är stödlinjen för barn. Kontakta BRIS via webbplatsens kontaktsida och be om regionkontoret i Malmö för praktikfrågor."},...MA);
+add({n:"Maskrosbarn Skåne",o:"Maskrosbarn",s:"ngo",sub:"Ideella organisationer",city:"Malmö",t:"Unga 13–19 år med svåra hemförhållanden: Torsdagsmys, kurator, barnombud, coach via socialtjänsten, helgläger",kw:"ungdomsledare, kurator, coach",u:"https://maskrosbarn.org/skane/",addr:"Ledebursgatan 5, vån 4, 211 55 Malmö",c:[{r:"Verksamhetschef Malmö",n:"Elisavet Johansson Tziampazis",t:"076-721 02 74"},{r:"Torsdagsmys (ungdomsgård)",n:"Sina Mofidy Kaloudis",t:"076-721 02 81"},{r:"Kurator",n:"Eline Bogen",t:"076-721 02 73"},{r:"Helgläger och barnombud",n:"Johanna Johansson",t:"076-721 02 71"}]},55.59,13.01);
+add({n:"Hela Människan Malmö",o:"Hela Människan",s:"ngo",sub:"Kyrkans sociala arbete",city:"Malmö",t:"Människor i utsatta livssituationer: tillfälligt boende, matutdelning, mötesplatser",kw:"socialarbetare, boendestödjare, volontärsamordnare",u:"https://helamanniskan.se/malmo/",addr:"Poststugan 78, 211 65 Malmö (postadress)",tel:"040-632 35 21",mail:"malmo@helamanniskan.se",c:[{r:"Verksamhetschef",n:"Birgitte Hald",t:"076-021 07 85",m:"birgitte.hald@helamanniskan.se"}]},...MA);
+add({n:"Noomi (Hela Människan Malmö)",o:"Hela Människan",s:"ngo",sub:"Ideella organisationer",city:"Malmö",t:"Personer utsatta för människohandel för sexuella ändamål eller prostitution: skyddat boende, uppsökande arbete",kw:"socialarbetare, stödsamtalare",u:"https://helamanniskan.se/malmo/",tel:"040-632 35 21",mail:"noomi.malmo@helamanniskan.se",c:[{r:"Verksamhetsledare",n:"Josefina Zadig",t:"076-176 43 57",m:"josefina.zadig@helamanniskan.se"}]},...MA);
+add({n:"ThaiWISE (Hela Människan Malmö)",o:"Hela Människan",s:"ngo",sub:"Ideella organisationer",city:"Malmö",t:"Thailändska kvinnor i Sverige – information och rådgivning om rättigheter",kw:"samhällsvägledare, socialarbetare",u:"https://helamanniskan.se/malmo/",tel:"076-035 32 78",mail:"contact@thaiwise.se",c:[{r:"Verksamhetsledare",n:"Panadda Changmanee",t:"076-035 32 78",m:"panadda.changmanee@helamanniskan.se"}]},...MA);
+add({n:"Klädhjälpen Malmö",o:"Hela Människan och Malmö Pingstförsamling",s:"ngo",sub:"Kyrkans sociala arbete",city:"Malmö",t:"Personer i behov – gratis kläder, husgeråd och mat",kw:"volontärsamordnare",u:"https://helamanniskan.se/malmo/",addr:"Europaporten, Stadiongatan 25A, Malmö",c:[{r:"Kontakt",n:"Monika Jensen",t:"076-021 49 38"}]},55.585,12.985);
+add({n:"Hela Människan Helsingborg (Ria)",o:"Hela Människan",s:"beroende",sub:"Akutboenden och härbärgen",city:"Helsingborg",t:"Människor i eller nära social utestängning: café, nykterhetsgrupp, motivationsgrupp, boendestöd (Bostad först)",kw:"socialarbetare, boendestödjare, motivationsarbetare",u:"https://helamanniskan.se/helsingborg/",addr:"Carl Krooks gata 54, Helsingborg",tel:"042-18 48 25",mail:"helsingborg@helamanniskan.se",c:[{r:"Föreståndare",n:"Annika Hultman Lübeck",m:"helsingborg@helamanniskan.se"}]},...HB);
+[["KFUM Malmö","Malmö",...MA],["KFUM Lund","Lund",...LU],["KFUM Helsingborg","Helsingborg",...HB]].forEach(([n,c,la,ln])=>add({n,o:"KFUM",s:"ngo",sub:"Idrottsrörelsen",city:c,t:"Barn och unga – idrott, fritid och ledarskap",kw:"ungdomsledare, föreningsutvecklare",v:0,u:"https://kfum.se",note:"Hitta den lokala föreningen via \"Hitta förening\" på kfum.se."},la,ln));
+add({n:"Röda Korsets Ungdomsförbund Malmö",o:"RKUF",s:"ngo",sub:"Ideella organisationer",city:"Malmö",t:"Unga – läxhjälp, mötesplatser och stöd i utsatta områden",kw:"ungdomsledare, volontärsamordnare",v:0,u:G("Röda Korsets Ungdomsförbund Malmö")},...MA);
+add({n:"Tjejzonen Malmö",o:"Tjejzonen",s:"ngo",sub:"Jourer och stödlinjer",city:"Malmö",t:"Tjejer 12–25 år – stödsamtal med storasyster",kw:"stödsamtalare",v:0,u:G("Tjejzonen Malmö")},...MA);
+add({n:"Noaks Ark Syd",o:"Noaks Ark",s:"ngo",sub:"Ideella organisationer",city:"Malmö",t:"Hiv-prevention och stöd för personer som lever med hiv",kw:"stödsamtalare, informatör",v:0,u:G("Noaks Ark Syd Malmö")},...MA);
+add({n:"Rädda Barnen Malmö",o:"Rädda Barnen",s:"ngo",sub:"Ideella organisationer",city:"Malmö",t:"Barn och familjer – läxhjälp, föräldrastöd, verksamhet för barn i utsatta områden",kw:"volontärsamordnare, projektledare",v:0,u:G("Rädda Barnen Malmö verksamhet")},...MA);
+add({n:"Ungdomens hus Malmö",o:"Malmö stad",s:"barn",sub:"Fältarbete och fritidsgårdar",city:"Malmö",t:"Unga – fritids- och mötesverksamhet",kw:"fritidsledare, ungdomsledare",v:0,u:G("Ungdomens hus Malmö"),tel:"040-34 10 00"},...MA);
+
+// slå ihop med befintliga poster med samma namn
+A.forEach(a=>{if(a.src===undefined)delete a.src;const e=P.find(p=>p.n===a.n);if(e){for(const key in a)if(e[key]==null&&a[key]!=null)e[key]=a[key]}else P.push(a)});
+})();
+
 const TOWNS = [["Bjuv",56.08,12.92],["Bromölla",56.07,14.47],["Burlöv (Arlöv)",55.64,13.08],["Båstad",56.43,12.85],["Eslöv",55.839,13.304],["Helsingborg",56.046,12.694],["Hässleholm",56.159,13.766],["Höganäs",56.20,12.56],["Hörby",55.855,13.662],["Höör",55.937,13.54],["Klippan",56.13,13.13],["Kristianstad",56.031,14.156],["Kävlinge",55.79,13.11],["Landskrona",55.87,12.83],["Lomma",55.67,13.07],["Lund",55.705,13.191],["Malmö",55.605,13.0],["Osby",56.38,13.99],["Perstorp",56.14,13.40],["Simrishamn",55.56,14.35],["Sjöbo",55.631,13.706],["Skurup",55.48,13.50],["Staffanstorp",55.64,13.21],["Svalöv",55.913,13.104],["Svedala",55.51,13.24],["Tomelilla",55.545,13.95],["Trelleborg",55.376,13.157],["Vellinge",55.47,13.02],["Ystad",55.43,13.82],["Åstorp",56.13,12.94],["Ängelholm",56.243,12.862],["Örkelljunga",56.28,13.28],["Östra Göinge (Broby)",56.25,14.08]];
 
 const FAV = new Set(["HVB-hem och SiS","Behandlingshem"]);
@@ -538,17 +780,91 @@ function contactHtml(p){
   if(p.mail)rows.push(`<dt>E-post</dt><dd><a href="mailto:${esc(p.mail)}">${esc(p.mail)}</a></dd>`);
   (p.c||[]).forEach(x=>rows.push(`<dt>${esc(x.r)}</dt><dd><strong>${esc(x.n)}</strong>${x.t?`<br><a href="${telHref(x.t)}">${esc(x.t)}</a>`:""}${x.m?`<br><a href="mailto:${esc(x.m)}">${esc(x.m)}</a>`:""}</dd>`));
   const note=p.note?`<p class="cnote">${esc(p.note)}</p>`:"";
-  const src=p.src?`<p class="csrc">Källa: <a href="${p.src}" target="_blank" rel="noopener">HVBGuiden ↗</a></p>`:"";
+  const src=p.src?`<p class="csrc">Källa: <a href="${p.src}" target="_blank" rel="noopener">${p.src.includes("lssguiden")?"LSSGuiden":"HVBGuiden"} ↗</a></p>`:"";
   if(!rows.length&&!note)return `<details class="contact" id="d${p.id}"><summary>Kontakt</summary><p class="cnote">Ingen kontaktuppgift hittad ännu. Använd länken "Sök kontakt" eller ring kommunens växel.</p>${src}</details>`;
   return `<details class="contact" id="d${p.id}"><summary>Kontakt${hasBoss(p)?" och chef":""}</summary>${rows.length?`<dl class="kv">${rows.join("")}</dl>`:""}${note}${src}</details>`;
 }
 
 
-// --- kontaktmarkering (sparas i webbläsaren) ---
-let marks=store.get("marks")||{};
+// --- status, anteckningar, stjärnor (sparas i webbläsaren) ---
+const STATUS=[["","Ej kontaktad"],["mejlat","Mejlat"],["ringt","Ringt"],["vantar","Väntar på svar"],["nej","Nej"],["intervju","Intervju"],["klart","Klart"]];
+const stName=Object.fromEntries(STATUS);
+let track=store.get("track");
+if(!track){track={};const old=store.get("marks")||{};for(const n in old)track[n]={st:"vantar",d:old[n]};store.set("track",track)}
+const T=n=>track[n]||{};
+function setT(n,patch){const t={...T(n),...patch};for(const key in t)if(t[key]===""||t[key]==null||t[key]===false)delete t[key];if(Object.keys(t).length)track[n]=t;else delete track[n];store.set("track",track)}
 const fmtDate=iso=>{try{return new Date(iso).toLocaleDateString("sv-SE",{day:"numeric",month:"short"})}catch(e){return ""}};
-function markHtml(p){const m=marks[p.n];return `<label class="mark${m?" on":""}"><input type="checkbox" data-mark="${esc(p.n)}"${m?" checked":""}> ${m?"Kontaktad "+fmtDate(m):"Kontaktad"}</label>`}
-document.addEventListener("change",e=>{const k=e.target.dataset&&e.target.dataset.mark;if(k==null)return;if(e.target.checked)marks[k]=new Date().toISOString();else delete marks[k];store.set("marks",marks);const y=scrollY;render();scrollTo(0,y)});
+const todayStr=()=>new Date().toLocaleDateString("sv-SE");
+const isDue=p=>{const f=T(p.n).fu;return !!f&&f<=todayStr()};
+function statusHtml(p){const t=T(p.n),st=t.st||"";
+  return `<div class="st-row"><button type="button" class="star" data-star="${p.id}" aria-pressed="${!!t.fav}" aria-label="Stjärnmärk" title="Stjärnmärk">${t.fav?"★":"☆"}</button><select class="status${st?" on st-"+st:""}" data-st="${p.id}" aria-label="Status för ${esc(p.n)}">${STATUS.map(([v,l])=>`<option value="${v}"${v===st?" selected":""}>${l}</option>`).join("")}</select></div>${st&&t.d?`<span class="stdate">${stName[st]} ${fmtDate(t.d)}</span>`:""}`}
+function notesHtml(p){const t=T(p.n);const fu=t.fu?` · följ upp ${fmtDate(t.fu)}`:"";
+  return `<details class="notes"${t.note||t.fu?" open":""}><summary>Anteckningar${fu}</summary><textarea data-note="${p.id}" placeholder="Vem pratade du med, vad sa de, vad ska du skicka…">${esc(t.note||"")}</textarea><div class="frow"><label>Följ upp <input type="date" data-fu="${p.id}" value="${t.fu||""}"></label>${t.fu?`<button type="button" class="linkbtn" data-fuclear="${p.id}">Ta bort datum</button>`:""}</div></details>`}
+const rerender=()=>{const y=scrollY;render();scrollTo(0,y)};
+document.addEventListener("change",e=>{const d=e.target.dataset||{};
+  if(d.st!=null){const p=P[+d.st];setT(p.n,{st:e.target.value,d:e.target.value?new Date().toISOString():""});rerender()}
+  else if(d.fu!=null){setT(P[+d.fu].n,{fu:e.target.value});rerender()}});
+let noteTimer;
+document.addEventListener("input",e=>{const d=e.target.dataset||{};if(d.note==null)return;const n=P[+d.note].n,v=e.target.value;clearTimeout(noteTimer);noteTimer=setTimeout(()=>setT(n,{note:v}),300)});
+document.addEventListener("focusout",e=>{const d=e.target.dataset||{};if(d.note!=null){clearTimeout(noteTimer);setT(P[+d.note].n,{note:e.target.value})}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-star],[data-fuclear],[data-mail]");if(!b)return;const d=b.dataset;
+  if(d.star!=null){const p=P[+d.star];setT(p.n,{fav:!T(p.n).fav});rerender()}
+  else if(d.fuclear!=null){setT(P[+d.fuclear].n,{fu:""});rerender()}
+  else if(d.mail!=null)openMail(P[+d.mail])});
+function fillStatusFilter(){const sel=$("markf"),cur=sel.value||store.get("markf")||"all";
+  const cnt=f=>P.filter(f).length;
+  const opts=[["all","Alla statusar",P.length],["none","Ej kontaktade",cnt(p=>!T(p.n).st)],["any","Kontaktade (alla statusar)",cnt(p=>!!T(p.n).st)],...STATUS.slice(1).map(([v,l])=>["st:"+v,l,cnt(p=>T(p.n).st===v)]),["star","★ Stjärnmärkta",cnt(p=>T(p.n).fav)],["due","Följ upp idag eller försenad",cnt(isDue)],["note","Med anteckning",cnt(p=>!!T(p.n).note)]];
+  sel.innerHTML=opts.map(([v,l,n])=>`<option value="${v}">${l} (${n})</option>`).join("");sel.value=opts.some(o=>o[0]===cur)?cur:"all"}
+function statusOk(p){const f=$("markf").value,t=T(p.n);
+  if(f==="all")return true;if(f==="none")return !t.st;if(f==="any")return !!t.st;if(f==="star")return !!t.fav;if(f==="due")return isDue(p);if(f==="note")return !!t.note;
+  if(f.startsWith("st:"))return t.st===f.slice(3);return true}
+
+// --- mejlmall ---
+let me=store.get("me")||{};let mailP=null;
+const BOSSRX=/chef|föreståndare|rektor|ledare|ansvarig|samordnare/i;
+function bossOf(p){const c=p.c||[];return c.find(x=>BOSSRX.test(x.r)&&x.n&&!/^(Socialrådgivningen|Kontakt)$/.test(x.n))||c.find(x=>x.m)||c[0]||null}
+function mailText(p){const b=bossOf(p);const first=b&&b.n&&/\s/.test(b.n.trim())?b.n.trim().split(/\s+/)[0]:(b&&b.n&&!/\s/.test(b.n)?b.n:"");
+  const name=me.name||"[Ditt namn]",edu=me.edu||"[utbildning och skola]",per=me.per||"[period], med start i januari 2027";
+  const tg=String(p.t||"").split(/[.:;(–]/)[0].trim();const tgl=tg?tg.charAt(0).toLowerCase()+tg.slice(1):"";
+  const subj=`Förfrågan om LIA-plats – socialpedagogstudent`;
+  const body=`Hej${first?" "+first:""}!
+
+Jag heter ${name} och studerar ${edu}. Under ${per} ska jag göra LIA (lärande i arbete) och jag skulle gärna göra den hos er på ${p.n}.${tgl?`
+
+Jag är särskilt intresserad av ert arbete med ${tgl}, och vill lära mig mer om hur ni arbetar socialpedagogiskt i vardagen.`:""}
+
+Under LIA:n är jag en del av arbetet på plats med stöd av en handledare hos er. Jag skickar gärna information från skolan om upplägg, tider och vad som förväntas av handledaren.
+
+Har ni möjlighet att ta emot en LIA-student? Om du inte är rätt person blir jag glad om du kan hänvisa mig vidare.
+
+Jag berättar gärna mer i telefon eller på ett kort möte.
+
+Med vänliga hälsningar
+${name}${me.tel?"\n"+me.tel:""}`;
+  return {to:(b&&b.m)||p.mail||"",subj,body}}
+function refreshMail(){if(!mailP)return;const m=mailText(mailP);$("m_body").value=m.body;$("m_subj").value=m.subj;if(!$("m_to").dataset.touched)$("m_to").value=m.to;updMailLink()}
+function updMailLink(){$("m_open").href=`mailto:${encodeURIComponent($("m_to").value).replace(/%40/g,"@")}?subject=${encodeURIComponent($("m_subj").value)}&body=${encodeURIComponent($("m_body").value)}`}
+function openMail(p){mailP=p;$("mailh").textContent="Mejlmall – "+p.n;$("m_to").dataset.touched="";["name","tel","edu","per"].forEach(k=>$("me_"+k).value=me[k]||"");$("m_msg").textContent=($("m_to").value=mailText(p).to)?"":"Ingen mejladress hittad – ring eller sök kontakt först.";refreshMail();const dlg=$("mailbox");dlg.showModal?dlg.showModal():dlg.setAttribute("open","")}
+["name","tel","edu","per"].forEach(k=>$("me_"+k).addEventListener("input",e=>{me[k]=e.target.value.trim();store.set("me",me);refreshMail()}));
+$("m_to").addEventListener("input",()=>{$("m_to").dataset.touched="1";updMailLink()});
+["m_subj","m_body"].forEach(id=>$(id).addEventListener("input",updMailLink));
+$("m_copy").addEventListener("click",async()=>{const txt=`Ämne: ${$("m_subj").value}\n\n${$("m_body").value}`;try{await navigator.clipboard.writeText(txt);$("m_msg").textContent="Kopierat."}catch(e){$("m_body").select();$("m_msg").textContent="Markerat – tryck Ctrl+C för att kopiera."}});
+$("m_mark").addEventListener("click",()=>{if(!mailP)return;setT(mailP.n,{st:"mejlat",d:new Date().toISOString()});$("m_msg").textContent="Markerad som mejlat.";rerender()});
+$("m_close").addEventListener("click",()=>{const d=$("mailbox");d.close?d.close():d.removeAttribute("open")});
+
+// --- backup ---
+$("exp").addEventListener("click",()=>{const data={app:"lia-karta",version:2,exported:new Date().toISOString(),track,me,home,sectors:[...active],maxkm:$("maxkm").value};
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download=`lia-karta-backup-${todayStr()}.json`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  $("bkmsg").textContent=`Sparade ${Object.keys(track).length} markerade arbetsplatser.`});
+$("impb").addEventListener("click",()=>$("imp").click());
+$("imp").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;
+  try{const d=JSON.parse(await f.text());if(d.app!=="lia-karta"||typeof d.track!=="object")throw 0;
+    const before=Object.keys(track).length;track={...track,...d.track};store.set("track",track);
+    if(d.me){me={...d.me,...me};store.set("me",me)}
+    if(d.home&&d.home.lat){setHome(d.home);if(d.home.addr)$("addr").value=d.home.addr}
+    $("bkmsg").textContent=`Importerade ${Object.keys(d.track).length} poster (${Object.keys(track).length-before} nya).`;rerender()}
+  catch(err){$("bkmsg").textContent="Filen gick inte att läsa som en backup från LIA-kartan."}
+  e.target.value=""});
 
 // --- filter ---
 function buildChips(){
@@ -568,14 +884,16 @@ function buildSubs(){
   SECTORS.filter(s=>!active.size||active.has(s.id)).forEach(s=>{const g=document.createElement("optgroup");g.label=s.name;s.subs.filter(x=>P.some(p=>p.sub===x)).forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;g.append(o)});sel.append(g)});
   sel.value=[...sel.options].some(o=>o.value===cur)?cur:"";
 }
-["sub","maxkm","q","sort","onlyboss","markf"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="maxkm")store.set("maxkm",$("maxkm").value);render()}));
+["sub","maxkm","q","sort","onlyboss","markf"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="maxkm")store.set("maxkm",$("maxkm").value);if(id==="markf")store.set("markf",$("markf").value);render()}));
 const mk=store.get("maxkm");if(mk)$("maxkm").value=mk;
 
 function filtered(){
   const sub=$("sub").value,max=+$("maxkm").value,q=$("q").value.trim().toLowerCase();
-  let r=P.map(p=>({...p,d:km(home,p)})).filter(p=>(!active.size||active.has(p.s))&&(!sub||p.sub===sub)&&(max>=200||p.d<=max)&&(!$("onlyboss").checked||hasBoss(p))&&($("markf").value==="all"||($("markf").value==="yes")===!!marks[p.n])&&(!q||(p.n+" "+p.o+" "+p.city+" "+p.t+" "+p.kw+" "+p.sub).toLowerCase().includes(q)));
+  let r=P.map(p=>({...p,d:km(home,p)})).filter(p=>(!active.size||active.has(p.s))&&(!sub||p.sub===sub)&&(max>=200||p.d<=max)&&(!$("onlyboss").checked||hasBoss(p))&&statusOk(p)&&(!q||(p.n+" "+p.o+" "+p.city+" "+p.t+" "+p.kw+" "+p.sub).toLowerCase().includes(q)));
   const s=$("sort").value;
-  r.sort(s==="name"?(a,b)=>a.n.localeCompare(b.n,"sv"):s==="fav"?(a,b)=>(b.fav-a.fav)||(a.d-b.d):(a,b)=>a.d-b.d);
+  const base=s==="name"?(a,b)=>a.n.localeCompare(b.n,"sv"):s==="fav"?(a,b)=>(b.fav-a.fav)||(a.d-b.d):s==="star"?(a,b)=>(!!T(b.n).fav-!!T(a.n).fav)||(a.d-b.d):(a,b)=>a.d-b.d;
+  r.forEach(p=>p.due=isDue(p));
+  r.sort((a,b)=>(b.due-a.due)||base(a,b));
   return r;
 }
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -583,21 +901,23 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function render(){
   const max=+$("maxkm").value;$("kmout").textContent=max>=200?"alla":max+" km";
   const r=filtered();
+  fillStatusFilter();
   $("count").textContent=`${r.length} av ${P.length} arbetsplatser · från ${home.name}`;
   const L=$("list");
   if(!r.length){L.innerHTML='<div class="empty">Inga arbetsplatser matchar. Öka max avstånd eller välj fler branscher.</div>'}
   else L.innerHTML=r.map(p=>{
     const s=secById[p.s],ref=REF[p.s];
     const isG=p.u.startsWith("https://www.google.com");
-    return `<article class="card${selected===p.id?" sel":""}${marks[p.n]?" done":""}" id="c${p.id}" style="--c:var(${s.c})">
-      <div class="hd"><div><h3>${esc(p.n)}</h3><div class="meta">${esc(p.o)} · ${esc(p.city)}</div></div><div class="hdr-r"><div class="dist">${p.d<1?"<1":Math.round(p.d)} km</div>${markHtml(p)}</div></div>
-      <div class="tags">${p.fav?'<span class="badge fav">Förstahandsval</span>':""}<span class="tag">${esc(p.sub)}</span>${hasBoss(p)?'<span class="badge boss">Chefskontakt</span>':""}<span class="badge ${p.v?"ok":"chk"}">${p.v?"Bekräftad":"Kontrollera"}</span></div>
+    return `<article class="card${selected===p.id?" sel":""}${T(p.n).st==="nej"?" done":""}" id="c${p.id}" style="--c:var(${s.c})">
+      <div class="hd"><div><h3>${esc(p.n)}</h3><div class="meta">${esc(p.o)} · ${esc(p.city)}</div></div><div class="hdr-r"><div class="dist">${p.d<1?"<1":Math.round(p.d)} km</div>${statusHtml(p)}</div></div>
+      <div class="tags">${p.due?`<span class="badge due">${T(p.n).fu<todayStr()?"Försenad uppföljning":"Följ upp idag"}</span>`:""}${adsFor(p)?`<span class="badge adv" title="${esc(adsFor(p))}">Annonserar nu</span>`:""}${p.fav?'<span class="badge fav">Förstahandsval</span>':""}<span class="tag">${esc(p.sub)}</span>${hasBoss(p)?'<span class="badge boss">Chefskontakt</span>':""}<span class="badge ${p.v?"ok":"chk"}">${p.v?"Bekräftad":"Kontrollera"}</span></div>
       <dl class="kv"><dt>Målgrupp</dt><dd>${esc(p.t)}</dd><dt>Sök på titeln</dt><dd>${esc(p.kw)}</dd><dt>Beslutar om LIA</dt><dd>${esc(ref.dec)}</dd></dl>
       ${contactHtml(p)}
-      <div class="links"><a href="${p.u}" target="_blank" rel="noopener">${isG?"Sök kontakt":"Webbplats"} ↗</a><a href="https://arbetsformedlingen.se/platsbanken/annonser?q=${encodeURIComponent(p.kw.split(",")[0].trim()+" "+p.city.split(" ")[0])}" target="_blank" rel="noopener">Platsbanken ↗</a><a href="#" data-show="${p.id}">Visa på kartan</a><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.n+" "+p.city)}" target="_blank" rel="noopener">Google Maps ↗</a></div>
+      ${notesHtml(p)}
+      <div class="links"><a href="${p.u}" target="_blank" rel="noopener">${isG?"Sök kontakt":"Webbplats"} ↗</a><a href="https://arbetsformedlingen.se/platsbanken/annonser?q=${encodeURIComponent(p.kw.split(",")[0].trim()+" "+p.city.split(" ")[0])}" target="_blank" rel="noopener">Platsbanken ↗</a><button type="button" class="linkbtn" data-mail="${p.id}">Mejlmall</button><a href="${travelUrl(p.addr||p.n+", "+p.city.replace(/\s*\(.*\)/,""))}" target="_blank" rel="noopener">Restid kollektivt ↗</a><a href="#" data-show="${p.id}">Visa på kartan</a><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.n+" "+p.city)}" target="_blank" rel="noopener">Google Maps ↗</a></div>
     </article>`}).join("");
   L.querySelectorAll("[data-show]").forEach(a=>a.onclick=e=>{e.preventDefault();select(+a.dataset.show,true)});
-  drawPoints(r);
+  drawPoints(r);drawAds();
 }
 
 // --- karta (Leaflet + OpenStreetMap) ---
@@ -612,7 +932,7 @@ function drawPoints(r){
   const max=+$("maxkm").value;
   if(max<200)L.circle([home.lat,home.lng],{radius:max*1000,color:css("--accent"),weight:1.5,dashArray:"6 5",fillOpacity:.06,interactive:false}).addTo(layer);
   lastPts.forEach(p=>{const s=secById[p.s],sel=p.id===selected;
-    const m=L.circleMarker(jit(p),{radius:sel?11:p.fav?8:6,color:sel?"#111":"#fff",weight:sel?3:1.5,fillColor:css(s.c),fillOpacity:marks[p.n]?.35:.95,dashArray:marks[p.n]?"3 3":null}).addTo(layer);
+    const m=L.circleMarker(jit(p),{radius:sel?11:T(p.n).fav?9:p.fav?8:6,color:sel?"#111":"#fff",weight:sel?3:1.5,fillColor:css(s.c),fillOpacity:T(p.n).st?.35:.95,dashArray:T(p.n).st?"3 3":null}).addTo(layer);
     m.bindPopup(`<b>${esc(p.n)}</b><br>${esc(p.city)} · ${Math.round(p.d)} km<br><span style="color:#555">${esc(p.sub)}</span><br><a href="#c${p.id}" data-card="${p.id}">Visa i listan</a> · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.n+" "+p.city)}" target="_blank" rel="noopener">Google Maps</a>`);
     m.on("click",()=>{selected=p.id;highlight()});
     markers[p.id]=m;});
@@ -627,10 +947,70 @@ function select(id,fromList){
 }
 map.on("click",e=>{if(!pickMode)return;pickMode=false;$("mapbox").classList.remove("setting");$("pick").classList.remove("primary");setHomeFromPoint(+e.latlng.lat.toFixed(5),+e.latlng.lng.toFixed(5),"Vald punkt")});
 
+
+// --- restid ---
+const travelUrl=dest=>`https://www.google.com/maps/dir/?api=1&origin=${home.lat},${home.lng}&destination=${encodeURIComponent(dest)}&travelmode=transit`;
+
+// --- Platsbanken live (JobTech JobSearch API) ---
+const ADKW=["socialpedagog","behandlingspedagog","behandlingsassistent","boendestödjare","fältsekreterare","stödpedagog","familjebehandlare","miljöterapeut"];
+let adkwOn=new Set(store.get("adkw")||ADKW),ADS=[],adsState="loading",selAd=null;
+const adLayer=L.layerGroup().addTo(map);
+const norm=t=>String(t||"").toLowerCase().replace(/\b(ab|aktiebolag|kommun|stad|i skåne)\b/g,"").replace(/[^a-zåäö0-9]+/g," ").trim();
+function townLL(muni){const m=norm(muni);const t=TOWNS.find(t=>norm(t[0]).startsWith(m)||m.startsWith(norm(t[0]).split(" ")[0]));return t?[t[1],t[2]]:null}
+let adIndex=null;
+function adsFor(p){if(!ADS.length)return "";if(!adIndex){adIndex={};}
+  if(adIndex[p.id]!==undefined)return adIndex[p.id];
+  const o=norm(p.o),n=norm(p.n),city=norm(p.city.split(" ")[0]);
+  const generic=/kommun|stad|region|kriminalvården|statens|svenska kyrkan/i.test(p.o);
+  const hits=ADS.filter(a=>{const e=norm(a.emp),w=norm(a.wp);
+    if(generic)return n.length>6&&w.length>6&&w.includes(n);
+    return o.length>3&&e.length>3&&(e===o||e.includes(o))&&(!city||norm(a.muni).startsWith(city)||norm(a.city).startsWith(city))});
+  return adIndex[p.id]=hits.length?hits.map(a=>a.head).slice(0,3).join(" · "):""}
+function buildAdKw(){$("adkw").innerHTML=ADKW.map(k=>`<button type="button" class="chip" aria-pressed="${adkwOn.has(k)}" data-adkw="${k}">${k}<span class="n">${ADS.filter(a=>a.kws.includes(k)).length||""}</span></button>`).join("");
+  $("adkw").querySelectorAll("[data-adkw]").forEach(b=>b.onclick=()=>{const k=b.dataset.adkw;adkwOn.has(k)?adkwOn.delete(k):adkwOn.add(k);store.set("adkw",[...adkwOn]);buildAdKw();renderAds()})}
+async function loadAds(){
+  const seen={};
+  const res=await Promise.allSettled(ADKW.map(k=>fetch(`https://jobsearch.api.jobtechdev.se/search?q=${encodeURIComponent(k)}&region=12&limit=100`,{headers:{accept:"application/json"}}).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>({k,hits:j.hits||[]}))));
+  let ok=0;
+  res.forEach(r=>{if(r.status!=="fulfilled")return;ok++;r.value.hits.forEach(h=>{
+    if(seen[h.id]){seen[h.id].kws.push(r.value.k);return}
+    const w=h.workplace_address||{};let ll=w.coordinates&&w.coordinates[1]!=null?[w.coordinates[1],w.coordinates[0]]:null,approx=false;
+    if(!ll){ll=townLL(w.municipality||w.city);approx=true}
+    const ct=(h.application_contacts||[]).map(c=>({n:c.name||"",r:c.description||c.contact_type||"",t:c.telephone||"",m:c.email||""})).filter(c=>c.n||c.t||c.m);
+    seen[h.id]={id:h.id,head:h.headline,emp:(h.employer&&h.employer.name)||"",wp:(h.employer&&h.employer.workplace)||"",muni:w.municipality||"",city:w.city||w.municipality||"",street:w.street_address||"",ll,approx,url:h.webpage_url,pub:h.publication_date,dl:h.application_deadline,occ:(h.occupation&&h.occupation.label)||"",ct,kws:[r.value.k]}})});
+  ADS=Object.values(seen);adIndex=null;adsState=ok?"ok":"error";
+  ADS.forEach((a,i)=>{if(a.ll&&a.approx){const g=i*2.399,rr=0.004+0.0008*(i%12);a.ll=[a.ll[0]+Math.sin(g)*rr,a.ll[1]+Math.cos(g)*rr*1.8]}});
+  buildAdKw();render();
+}
+function adsFiltered(){const max=+$("maxkm").value;
+  return ADS.filter(a=>a.kws.some(k=>adkwOn.has(k))).map(a=>({...a,d:a.ll?km(home,{lat:a.ll[0],lng:a.ll[1]}):null})).filter(a=>max>=200||(a.d!=null&&a.d<=max)).sort((a,b)=>(a.d??999)-(b.d??999))}
+const fmtD=iso=>iso?new Date(iso).toLocaleDateString("sv-SE",{day:"numeric",month:"short"}):"";
+function renderAds(){const L2=$("adlist");
+  if(adsState==="loading"){L2.innerHTML='<div class="empty">Hämtar annonser…</div>';return}
+  if(adsState==="error"){L2.innerHTML='<div class="empty">Kunde inte hämta annonser från Platsbanken just nu. Ladda om sidan om en stund.</div>';$("adscount").textContent="";return}
+  const r=adsFiltered();$("adscount").textContent=`${r.length} av ${ADS.length} annonser`;
+  if(!r.length){L2.innerHTML='<div class="empty">Inga annonser inom avståndet. Öka max avstånd eller välj fler sökord.</div>';return}
+  L2.innerHTML=r.map(a=>`<article class="ad${selAd===a.id?" sel":""}" id="a${a.id}">
+    <h3>${esc(a.head)}</h3>
+    <div class="meta">${esc(a.emp)}${a.wp&&a.wp!==a.emp?" · "+esc(a.wp):""}</div>
+    <div class="meta">${esc(a.city)}${a.street?", "+esc(a.street):""}${a.d!=null?` · ${a.d<1?"<1":Math.round(a.d)} km${a.approx?" (ortens mitt)":""}`:""}</div>
+    <div class="meta">Publicerad ${fmtD(a.pub)}${a.dl?` · sista ansökan <b>${fmtD(a.dl)}</b>`:""}${a.occ?" · "+esc(a.occ):""}</div>
+    ${a.ct.length?`<dl class="kv">${a.ct.map(c=>`<dt>${esc(c.r||"Kontakt")}</dt><dd>${c.n?`<strong>${esc(c.n)}</strong>`:""}${c.t?`<br><a href="${telHref(c.t)}">${esc(c.t)}</a>`:""}${c.m?`<br><a href="mailto:${esc(c.m)}">${esc(c.m)}</a>`:""}</dd>`).join("")}</dl>`:""}
+    <div class="links"><a href="${esc(a.url)}" target="_blank" rel="noopener">Läs annonsen ↗</a>${a.ll?`<a href="#" data-adshow="${a.id}">Visa på kartan</a>`:""}<a href="${travelUrl(a.street?a.street+", "+a.city:a.emp+", "+a.city)}" target="_blank" rel="noopener">Restid kollektivt ↗</a></div>
+  </article>`).join("");
+  L2.querySelectorAll("[data-adshow]").forEach(x=>x.onclick=e=>{e.preventDefault();const a=ADS.find(a=>a.id===x.dataset.adshow);selAd=a.id;renderAds();drawAds();map.flyTo(a.ll,13,{duration:.6});setTimeout(()=>adMarkers[a.id]&&adMarkers[a.id].openPopup(),650);$("mapbox").scrollIntoView({block:"nearest",behavior:"smooth"})})}
+const adMarkers={};
+const adIcon=L.divIcon({className:"",html:'<span class="admk"></span>',iconSize:[16,16],iconAnchor:[8,8]});
+function drawAds(){adLayer.clearLayers();renderAds();if(!$("adsmap").checked||adsState!=="ok")return;
+  adsFiltered().filter(a=>a.ll).forEach(a=>{const m=L.marker(a.ll,{icon:adIcon,title:a.head}).addTo(adLayer);
+    m.bindPopup(`<b>${esc(a.head)}</b><br>${esc(a.emp)} · ${esc(a.city)}${a.dl?`<br>Sista ansökan ${fmtD(a.dl)}`:""}<br><a href="${esc(a.url)}" target="_blank" rel="noopener">Läs annonsen</a> · <a href="#a${a.id}" data-adcard="${a.id}">Visa i listan</a>`);adMarkers[a.id]=m})}
+$("adsmap").addEventListener("change",drawAds);
+map.on("popupopen",e=>{const a=e.popup.getElement().querySelector("[data-adcard]");if(a)a.onclick=ev=>{ev.preventDefault();selAd=a.dataset.adcard;renderAds();const el=$("a"+selAd);if(el)el.scrollIntoView({block:"center",behavior:"smooth"})}});
+
 // --- referenstabell ---
 $("reftbody").innerHTML=SECTORS.map(s=>{const r=REF[s.id];return `<tr style="--c:var(${s.c})"><td><span class="sw"></span><strong>${s.name}</strong><div class="meta">${s.subs.join(" · ")}</div></td><td>${r.kw}</td><td>${r.dec}</td><td>${r.how}</td></tr>`}).join("");
 
-fillTowns();buildChips();buildSubs();showHome();if(home.addr)$("addr").value=home.addr;render();
+fillTowns();buildChips();buildSubs();showHome();if(home.addr)$("addr").value=home.addr;fillStatusFilter();render();buildAdKw();loadAds();
 </script>
 
 </body>
